@@ -1,0 +1,228 @@
+
+{% extends "base.html" %}
+
+{% block title %}Đăng nhập | FlashLearn{% endblock %}
+
+{% block head %}
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/auth.css') }}"
+>
+<script
+    src="{{ url_for('static', filename='js/auth.js') }}"
+    defer
+></script>
+{% endblock %}
+
+{% block public_content %}
+
+<div class="auth-page">
+
+    <!-- 1. HEADER -->
+    <header class="auth-header">
+        <div class="auth-header-container">
+
+            <a class="auth-logo" href="{{ url_for('index') }}">
+                FlashLearn
+            </a>
+
+            <nav class="auth-navigation">
+                <a href="{{ url_for('index') }}">Trang chủ</a>
+                <a href="#support">Hỗ trợ</a>
+
+                <a href="#" class="auth-avatar" aria-label="Tài khoản">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="8" r="3"
+                                stroke="currentColor"
+                                stroke-width="1.8" fill="none"/>
+                        <path d="M5.5 19c0-3.5 2.7-5.5 6.5-5.5s6.5 2 6.5 5.5"
+                              stroke="currentColor"
+                              stroke-width="1.8"
+                              stroke-linecap="round"
+                              fill="none"/>
+                    </svg>
+                </a>
+            </nav>
+
+        </div>
+    </header>
+
+
+    <!-- 2. MAIN CONTENT -->
+    <main class="auth-main">
+
+        <div class="auth-content">
+
+            <!-- LOGIN CARD -->
+            <section class="auth-card">
+
+                <!-- Badge -->
+                <div class="auth-badge">
+                    <span aria-hidden="true">♧</span>
+                    Hỗ trợ Học viên, Giảng viên &amp; Quản trị viên
+                </div>
+
+                <!-- Title -->
+                <div class="auth-heading">
+                    <h1>Đăng nhập tài khoản</h1>
+
+                    <p>
+                        Chào mừng bạn quay trở lại với Hệ thống học từ vựng
+                        Flashcard
+                    </p>
+                </div>
+
+
+                <!-- Login Form -->
+                <form
+                    method="POST"
+                    action="{{ url_for('auth.login', next=request.args.get('next')) }}"
+                    class="auth-form"
+                >
+
+                    <!-- CSRF protection -->
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="{{ csrf_token() }}"
+                    >
+
+                    <!-- Email -->
+                    <div class="auth-field">
+
+                        <label for="email">
+                            Địa chỉ Email
+                        </label>
+
+                        <div class="auth-input-wrapper">
+
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                placeholder="vidu@email.com"
+                                value="{{ request.form.get('email', '') }}"
+                                autocomplete="username"
+                                required
+                            >
+
+                            <span class="auth-input-icon"
+                                  aria-hidden="true">✉</span>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Password -->
+                    <div class="auth-field">
+
+                        <label for="password">
+                            Mật khẩu
+                        </label>
+
+                        <div class="auth-input-wrapper">
+
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="Nhập mật khẩu của bạn"
+                                autocomplete="current-password"
+                                required
+                            >
+
+                            <button
+                                type="button"
+                                class="auth-password-toggle"
+                                id="togglePassword"
+                                aria-label="Hiện mật khẩu"
+                            >
+                                Hiện
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Remember and forgot password -->
+                    <div class="auth-options">
+
+                        <label class="auth-remember">
+                            <input
+                                type="checkbox"
+                                name="remember"
+                                value="1"
+                            >
+                            <span>Ghi nhớ đăng nhập</span>
+                        </label>
+
+                        <a href="#" class="auth-forgot">
+                            Quên mật khẩu?
+                        </a>
+
+                    </div>
+
+
+                    <!-- Submit -->
+                    <button type="submit" class="auth-submit">
+                        <span>Đăng nhập</span>
+                        <span aria-hidden="true">→</span>
+                    </button>
+
+                </form>
+
+
+                <!-- Register Link -->
+                <div class="auth-register">
+                    <span>Chưa có tài khoản?</span>
+                    <a href="#">Đăng ký ngay</a>
+                </div>
+
+            </section>
+
+
+            <!-- Security Information -->
+            <div class="auth-benefits">
+
+                <div class="auth-benefit">
+                    <span aria-hidden="true">♢</span>
+                    Bảo mật chuẩn SSL
+                </div>
+
+                <div class="auth-benefit">
+                    <span aria-hidden="true">ϟ</span>
+                    Đồng bộ tức thì
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- 3. FOOTER -->
+    <footer class="auth-footer">
+
+        <div class="auth-footer-container">
+
+            <p>
+                © 2025 Hệ thống học trực tuyến Flashcard -
+                Nền tảng ghi nhớ ngắt quãng thông minh
+            </p>
+
+            <nav class="auth-footer-links">
+                <a href="#terms">Điều khoản sử dụng</a>
+                <a href="#privacy">Chính sách bảo mật</a>
+                <a href="#support">Liên hệ hỗ trợ</a>
+            </nav>
+
+        </div>
+
+    </footer>
+
+</div>
+
+{% endblock %}
