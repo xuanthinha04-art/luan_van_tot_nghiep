@@ -1,0 +1,341 @@
+
+{% extends "base.html" %}
+
+{% block title %}Khóa học của tôi | Flashcard LMS{% endblock %}
+
+{% block content %}
+
+<div class="courses-page">
+
+    <!-- PAGE HEADING -->
+    <div class="courses-page-heading">
+
+        <div>
+            <div class="eyebrow">COURSE MANAGEMENT</div>
+
+            <h1>Khóa học của tôi</h1>
+
+            <p class="muted">
+                Quản lý các khóa học bạn tạo hoặc được phân công phụ trách.
+            </p>
+        </div>
+
+        <a
+            href="{{ url_for('lecturer.create_course') }}"
+            class="btn btn-primary"
+        >
+            ＋ Tạo khóa học mới
+        </a>
+
+    </div>
+
+
+    <!-- COURSE SUMMARY -->
+    <div class="course-summary-grid">
+
+        <article class="course-summary-card">
+            <div>
+                <span>Tổng khóa học</span>
+                <strong>{{ summary.total_count or 0 }}</strong>
+            </div>
+            <div class="course-summary-icon">
+                ▤
+            </div>
+        </article>
+
+
+        <article class="course-summary-card">
+            <div>
+                <span>Đã xuất bản</span>
+                <strong>{{ summary.published_count or 0 }}</strong>
+            </div>
+            <div class="course-summary-icon">
+                ✓
+            </div>
+        </article>
+
+
+        <article class="course-summary-card">
+            <div>
+                <span>Bản nháp</span>
+                <strong>{{ summary.draft_count or 0 }}</strong>
+            </div>
+            <div class="course-summary-icon orange">
+                ◷
+            </div>
+        </article>
+
+
+        <article class="course-summary-card">
+            <div>
+                <span>Đã ẩn</span>
+                <strong>{{ summary.unpublished_count or 0 }}</strong>
+            </div>
+            <div class="course-summary-icon gray">
+                ◌
+            </div>
+        </article>
+
+    </div>
+
+
+    <!-- FILTER TOOLBAR -->
+    <div class="course-toolbar">
+
+        <!-- Status tabs -->
+        <nav class="course-filter-tabs">
+
+            <a
+                class="course-filter-tab {% if not selected_status %}active{% endif %}"
+                href="{{ url_for('lecturer.courses', q=q, language_id=selected_language) }}"
+            >
+                Tất cả
+                <span class="course-filter-count">
+                    {{ summary.total_count or 0 }}
+                </span>
+            </a>
+
+
+            <a
+                class="course-filter-tab {% if selected_status == 'PUBLISHED' %}active{% endif %}"
+                href="{{ url_for('lecturer.courses', q=q, language_id=selected_language, status='PUBLISHED') }}"
+            >
+                Đã xuất bản
+            </a>
+
+
+            <a
+                class="course-filter-tab {% if selected_status == 'DRAFT' %}active{% endif %}"
+                href="{{ url_for('lecturer.courses', q=q, language_id=selected_language, status='DRAFT') }}"
+            >
+                Bản nháp
+            </a>
+
+
+            <a
+                class="course-filter-tab {% if selected_status == 'UNPUBLISHED' %}active{% endif %}"
+                href="{{ url_for('lecturer.courses', q=q, language_id=selected_language, status='UNPUBLISHED') }}"
+            >
+                Đã ẩn
+            </a>
+
+        </nav>
+
+
+        <!-- Search and language filter -->
+        <form
+            method="get"
+            action="{{ url_for('lecturer.courses') }}"
+            class="course-filter-form"
+        >
+
+            <div class="search-input">
+                <span>⌕</span>
+
+                <input
+                    type="search"
+                    name="q"
+                    value="{{ q }}"
+                    placeholder="Tìm khóa học..."
+                >
+            </div>
+
+
+            <input
+                type="hidden"
+                name="status"
+                value="{{ selected_status }}"
+            >
+
+
+            <select
+                name="language_id"
+                aria-label="Lọc theo ngôn ngữ"
+            >
+                <option value="">Tất cả ngôn ngữ</option>
+
+                {% for language in languages %}
+                    <option
+                        value="{{ language.language_id }}"
+                        {% if selected_language == language.language_id|string %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ language.language_name }}
+                    </option>
+                {% endfor %}
+
+            </select>
+
+
+            <button
+                type="submit"
+                class="btn btn-secondary"
+            >
+                Lọc
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <!-- COURSE LIST -->
+    <div class="course-grid">
+
+        {% if courses %}
+
+            {% for course in courses %}
+
+                <article class="course-card">
+
+                    <!-- COURSE COVER -->
+                    <div class="course-cover cover-{{ loop.index0 % 4 }}">
+
+                        <div class="course-cover-status">
+
+                            <span class="status status-{{ course.status|lower }}">
+                                {% if course.status == 'PUBLISHED' %}
+                                    Đã xuất bản
+                                {% elif course.status == 'DRAFT' %}
+                                    Bản nháp
+                                {% elif course.status == 'UNPUBLISHED' %}
+                                    Đã ẩn
+                                {% else %}
+                                    {{ course.status }}
+                                {% endif %}
+                            </span>
+
+                        </div>
+
+
+                        <div class="course-cover-symbol">
+                            {% if 'English' in course.language_name %}
+                                EN
+                            {% elif 'Japanese' in course.language_name %}
+                                JP
+                            {% elif 'Chinese' in course.language_name %}
+                                CN
+                            {% else %}
+                                FL
+                            {% endif %}
+                        </div>
+
+
+                        <div class="course-cover-learners">
+                            ♙ {{ course.learners_count }} học viên
+                        </div>
+
+                    </div>
+
+
+                    <!-- COURSE INFORMATION -->
+                    <div class="course-card-body">
+
+                        <div class="course-card-category">
+                            <span>♧</span>
+
+                            {{ course.language_name }}
+
+                            <span>•</span>
+
+                            {{ course.topic_name or 'Chưa phân chủ đề' }}
+                        </div>
+
+
+                        <h3
+                            class="course-card-title"
+                            title="{{ course.course_name }}"
+                        >
+                            {{ course.course_name }}
+                        </h3>
+
+
+                        <p class="course-card-description">
+                            {{ course.description or 'Khóa học chưa có mô tả.' }}
+                        </p>
+
+
+                        <!-- COURSE METRICS -->
+                        <div class="course-card-metrics">
+
+                            <span>
+                                ▤ {{ course.lessons_count }} bài học
+                            </span>
+
+                            <span>
+                                ▧ {{ course.flashcards_count }} Flashcard
+                            </span>
+
+                        </div>
+
+
+                        <!-- ACTIONS -->
+                        <div class="course-card-footer">
+
+                            <a
+                                href="{{ url_for('lecturer.course_lessons', course_id=course.course_id) }}"
+                                class="btn btn-primary btn-small"
+                            >
+                                Quản lý bài học
+                            </a>
+
+
+                            {% if course.can_edit %}
+
+                                <a
+                                    href="{{ url_for('lecturer.edit_course', course_id=course.course_id) }}"
+                                    class="course-edit-link"
+                                >
+                                    ✎ Chỉnh sửa
+                                </a>
+
+                            {% else %}
+
+                                <span class="course-edit-link">
+                                    Chỉ xem
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+            {% endfor %}
+
+
+        {% else %}
+
+            <!-- EMPTY STATE -->
+            <div class="course-empty">
+
+                <div class="course-empty-icon">
+                    ▤
+                </div>
+
+                <h3>Không tìm thấy khóa học</h3>
+
+                <p>
+                    Không có khóa học phù hợp với điều kiện tìm kiếm
+                    hoặc bộ lọc hiện tại.
+                </p>
+
+                <a
+                    href="{{ url_for('lecturer.courses') }}"
+                    class="btn btn-secondary btn-small"
+                >
+                    Xóa bộ lọc
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

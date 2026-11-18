@@ -136,9 +136,12 @@
                                 type="button"
                                 class="auth-password-toggle"
                                 id="togglePassword"
+                                data-password-toggle
+                                data-target="password"
                                 aria-label="Hiện mật khẩu"
+                                aria-pressed="false"
                             >
-                                Hiện
+                                <span aria-hidden="true">◉</span>
                             </button>
 
                         </div>
@@ -177,7 +180,9 @@
                 <!-- Register Link -->
                 <div class="auth-register">
                     <span>Chưa có tài khoản?</span>
-                    <a href="#">Đăng ký ngay</a>
+                    <a href="{{ url_for('auth.register') }}">
+                        Đăng ký ngay
+                    </a>
                 </div>
 
             </section>

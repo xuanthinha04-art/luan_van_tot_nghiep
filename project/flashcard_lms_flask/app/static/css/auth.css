@@ -523,3 +523,265 @@
         flex-direction: column;
     }
 }
+
+
+/* ========================================
+   REGISTER PAGE
+======================================== */
+
+/* Khu vực nội dung đăng ký */
+.register-main {
+    padding-top: 32px;
+    padding-bottom: 36px;
+}
+
+.register-content {
+    max-width: 440px;
+}
+
+/* Thẻ đăng ký */
+.register-card {
+    padding: 32px;
+    border-radius: 13px;
+    background: #ffffff;
+}
+
+/* Badge đăng ký */
+.register-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    width: fit-content;
+    padding: 5px 11px;
+    margin-bottom: 17px;
+
+    border-radius: 30px;
+    background: #eef4ff;
+
+    color: #087443;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Tiêu đề */
+.register-heading {
+    margin-bottom: 17px;
+}
+
+.register-heading h1 {
+    margin: 0 0 5px;
+
+    color: #176d49;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.register-heading p {
+    margin: 0;
+
+    color: #536359;
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+/* Thông báo vai trò Learner */
+.register-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+
+    padding: 9px 10px;
+    margin-bottom: 24px;
+
+    border-radius: 9px;
+    background: #eef3ff;
+
+    color: #087443;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.register-notice p {
+    margin: 0;
+}
+
+.notice-icon {
+    flex: 0 0 17px;
+
+    width: 17px;
+    height: 17px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 50%;
+    background: #16865a;
+    color: white;
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* Các trường đăng ký */
+.register-form {
+    gap: 15px;
+}
+
+.register-field {
+    gap: 7px;
+}
+
+.register-field > label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    color: #263444;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.required-mark {
+    color: #dc4242;
+    font-weight: 700;
+}
+
+/* Ô nhập liệu Register */
+.register-field .auth-input-wrapper input {
+    height: 44px;
+    min-height: 44px;
+
+    border: 1px solid #edf1ed;
+    background: #ffffff;
+    border-radius: 9px;
+
+    color: #263b30;
+    font-size: 13px;
+}
+
+.register-field .auth-input-wrapper input::placeholder {
+    color: #b1c2b5;
+}
+
+.register-field .auth-input-wrapper input:focus {
+    border-color: #83b99a;
+}
+
+/* Nút hiện/ẩn mật khẩu */
+.register-field .auth-password-toggle {
+    width: 34px;
+    height: 34px;
+
+    right: 5px;
+
+    display: grid;
+    place-items: center;
+
+    border: none;
+    background: transparent;
+
+    color: #718078;
+    font-size: 18px;
+
+    cursor: pointer;
+}
+
+.register-field .auth-password-toggle:hover {
+    color: #006a3f;
+}
+
+/* Điều khoản sử dụng */
+.register-terms {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+
+    margin-top: 4px;
+
+    color: #46564b;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.5;
+
+    cursor: pointer;
+}
+
+.register-terms input[type="checkbox"] {
+    flex: 0 0 16px;
+
+    width: 16px;
+    height: 16px;
+    min-height: auto;
+
+    margin: 2px 0 0;
+
+    accent-color: #006a3f;
+}
+
+.register-terms a {
+    color: #007347;
+    font-weight: 600;
+}
+
+.register-terms a:hover {
+    text-decoration: underline;
+}
+
+/* Nút đăng ký */
+.register-submit {
+    margin-top: 4px;
+    height: 44px;
+}
+
+/* Liên kết đăng nhập */
+.register-login-link {
+    min-height: 28px;
+
+    margin-top: 28px;
+    padding: 5px 0;
+
+    background: transparent;
+    border-radius: 0;
+}
+
+/* Thông tin bảo mật */
+.register-benefits {
+    margin-top: 22px;
+    gap: 13px;
+}
+
+.benefit-separator {
+    color: #b5c9bc;
+    font-size: 13px;
+}
+
+
+/* ========================================
+   REGISTER RESPONSIVE
+======================================== */
+
+@media (max-width: 600px) {
+
+    .register-main {
+        padding: 25px 16px;
+    }
+
+    .register-card {
+        padding: 25px 20px;
+    }
+
+    .register-heading h1 {
+        font-size: 21px;
+    }
+
+    .register-notice {
+        font-size: 11px;
+    }
+
+    .register-benefits {
+        gap: 10px;
+    }
+}
+

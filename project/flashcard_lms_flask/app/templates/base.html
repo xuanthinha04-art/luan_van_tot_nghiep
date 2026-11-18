@@ -3,74 +3,248 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Flashcard LMS{% endblock %}</title>
+  <title>
+    {% block title %}Flashcard LMS{% endblock %}
+  </title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/app.css') }}"
+  >
+
+  {% if current_user.is_authenticated %}
+  <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/lecturer.css') }}"
+  >
+  {% endif %}
   {% block head %}{% endblock %}
 </head>
 <body>
 {% if current_user.is_authenticated %}
-<div class="app-shell">
-  <aside class="sidebar" id="sidebar">
-    <a class="brand" href="{{ url_for('lecturer.dashboard') }}">
-      <span class="brand-mark">F</span>
-      <span><strong>Flashcard</strong><small>Learning Management</small></span>
-    </a>
 
-    <div class="sidebar-label">KHÔNG GIAN GIẢNG VIÊN</div>
-    <nav class="nav-menu">
-      <a class="nav-link {% if request.endpoint == 'lecturer.dashboard' %}active{% endif %}" href="{{ url_for('lecturer.dashboard') }}">
-        <span class="nav-icon">⌂</span><span>Tổng quan</span>
-      </a>
-      <a class="nav-link {% if request.endpoint in ['lecturer.courses', 'lecturer.create_course', 'lecturer.edit_course', 'lecturer.course_lessons'] %}active{% endif %}" href="{{ url_for('lecturer.courses') }}">
-        <span class="nav-icon">▤</span><span>Quản lý khóa học</span>
-      </a>
-      <a class="nav-link {% if request.endpoint == 'lecturer.enrollments' %}active{% endif %}" href="{{ url_for('lecturer.enrollments') }}">
-        <span class="nav-icon">✓</span><span>Duyệt đăng ký</span>
-      </a>
-      <a class="nav-link {% if request.endpoint == 'lecturer.students' %}active{% endif %}" href="{{ url_for('lecturer.students') }}">
-        <span class="nav-icon">♙</span><span>Học viên</span>
-      </a>
-    </nav>
+<div class="app-shell lecturer-shell">
 
-    <div class="sidebar-label sidebar-label-bottom">TÀI KHOẢN</div>
-    <div class="sidebar-user">
-      <div class="avatar">{{ current_user.full_name[:1]|upper }}</div>
-      <div class="user-meta"><strong>{{ current_user.full_name }}</strong><small>Giảng viên</small></div>
-      <form method="post" action="{{ url_for('auth.logout') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="icon-button" type="submit" title="Đăng xuất">↪</button>
-      </form>
-    </div>
-  </aside>
+    <!-- SIDEBAR -->
+    <aside class="sidebar lecturer-sidebar" id="sidebar">
 
-  <main class="main-area">
-    <header class="topbar">
-      <button class="menu-toggle" id="menuToggle" type="button" aria-label="Mở menu">☰</button>
-      <div class="breadcrumb">Flashcard LMS <span>/</span> {% block breadcrumb %}Tổng quan{% endblock %}</div>
-      <div class="topbar-right">
-        <span class="topbar-date" id="todayLabel"></span>
-        <div class="avatar avatar-small">{{ current_user.full_name[:1]|upper }}</div>
-      </div>
-    </header>
+        <a class="brand lecturer-brand"
+           href="{{ url_for('lecturer.dashboard') }}">
 
-    <section class="page-content">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="flash-stack">
-            {% for category, message in messages %}
-              <div class="flash flash-{{ category }}">{{ message }}</div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endwith %}
-      {% block content %}{% endblock %}
-    </section>
-    <footer class="footer">Flashcard LMS <span>•</span> Khu vực giảng viên</footer>
-  </main>
+            <span class="brand-mark">F</span>
+
+            <span>
+                <strong>Flashcard LMS</strong>
+                <small>CỔNG GIẢNG VIÊN</small>
+            </span>
+
+        </a>
+
+
+        <!-- MAIN NAVIGATION -->
+        <nav class="nav-menu lecturer-nav">
+
+            <a class="nav-link {% if request.endpoint == 'lecturer.dashboard' %}active{% endif %}"
+               href="{{ url_for('lecturer.dashboard') }}">
+                <span class="nav-icon">▦</span>
+                <span>Tổng quan Giảng viên</span>
+            </a>
+
+            <a class="nav-link {% if request.endpoint in ['lecturer.courses', 'lecturer.create_course', 'lecturer.edit_course'] %}active{% endif %}"
+               href="{{ url_for('lecturer.courses') }}">
+                <span class="nav-icon">▤</span>
+                <span>Khóa học của tôi</span>
+            </a>
+
+            <a class="nav-link {% if request.endpoint in ['lecturer.course_lessons', 'lecturer.create_lesson', 'lecturer.attach_vocabulary_set'] %}active{% endif %}"
+               href="{{ url_for('lecturer.courses') }}">
+                <span class="nav-icon">◫</span>
+                <span>Quản lý bài học</span>
+            </a>
+
+            <a class="nav-link {% if request.endpoint in ['lecturer.enrollments', 'lecturer.review_enrollment'] %}active{% endif %}"
+               href="{{ url_for('lecturer.enrollments') }}">
+                <span class="nav-icon">♧</span>
+                <span>Yêu cầu đăng ký</span>
+            </a>
+
+            <a class="nav-link {% if request.endpoint == 'lecturer.students' %}active{% endif %}"
+               href="{{ url_for('lecturer.students') }}">
+                <span class="nav-icon">♙</span>
+                <span>Danh sách học viên</span>
+            </a>
+
+
+            <!-- Các chức năng sẽ triển khai ở những bước sau -->
+            <span class="nav-link nav-link-disabled"
+                  aria-disabled="true"
+                  title="Chức năng đang được phát triển">
+                <span class="nav-icon">▣</span>
+                <span>Bài kiểm tra và bài tập</span>
+                <small class="nav-coming">Sau</small>
+            </span>
+
+            <span class="nav-link nav-link-disabled"
+                  aria-disabled="true"
+                  title="Chức năng đang được phát triển">
+                <span class="nav-icon">▥</span>
+                <span>Theo dõi tiến độ</span>
+                <small class="nav-coming">Sau</small>
+            </span>
+
+            <span class="nav-link nav-link-disabled"
+                  aria-disabled="true"
+                  title="Chức năng đang được phát triển">
+                <span class="nav-icon">☆</span>
+                <span>Quản lý kết quả</span>
+                <small class="nav-coming">Sau</small>
+            </span>
+
+            <span class="nav-link nav-link-disabled"
+                  aria-disabled="true"
+                  title="Chức năng đang được phát triển">
+                <span class="nav-icon">♙</span>
+                <span>Thông tin cá nhân</span>
+                <small class="nav-coming">Sau</small>
+            </span>
+
+        </nav>
+
+
+        <!-- SIDEBAR BOTTOM -->
+        <div class="lecturer-sidebar-bottom">
+
+            <div class="sidebar-support">
+                <span>ⓘ</span>
+                Hỗ trợ giảng viên
+            </div>
+
+            <div class="sidebar-user">
+
+                <div class="avatar">
+                    {{ current_user.full_name[:1]|upper }}
+                </div>
+
+                <div class="user-meta">
+                    <strong>{{ current_user.full_name }}</strong>
+                    <small>Giảng viên</small>
+                </div>
+
+                <form method="post"
+                      action="{{ url_for('auth.logout') }}">
+
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="{{ csrf_token() }}"
+                    >
+
+                    <button
+                        class="icon-button"
+                        type="submit"
+                        title="Đăng xuất"
+                    >
+                        ↪
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN AREA -->
+    <main class="main-area lecturer-main-area">
+
+        <!-- TOPBAR -->
+        <header class="topbar lecturer-topbar">
+
+            <button
+                class="menu-toggle"
+                id="menuToggle"
+                type="button"
+                aria-label="Mở menu"
+            >
+                ☰
+            </button>
+
+
+            <!-- Search -->
+            <form
+                class="topbar-search"
+                method="get"
+                action="{{ url_for('lecturer.courses') }}"
+            >
+                <span aria-hidden="true">⌕</span>
+
+                <input
+                    type="search"
+                    name="q"
+                    placeholder="Tìm kiếm khóa học..."
+                    aria-label="Tìm kiếm khóa học"
+                >
+            </form>
+
+
+            <!-- Account information -->
+            <div class="topbar-right">
+
+                <span class="notification-icon"
+                      title="Thông báo">
+                    ♧
+                    <i></i>
+                </span>
+
+                <div class="topbar-profile">
+                    <strong>{{ current_user.full_name }}</strong>
+                    <small>Giảng viên</small>
+                </div>
+
+                <div class="avatar avatar-small">
+                    {{ current_user.full_name[:1]|upper }}
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- PAGE CONTENT -->
+        <section class="page-content">
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-stack">
+                        {% for category, message in messages %}
+                            <div class="flash flash-{{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+
+        </section>
+
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            Flashcard LMS
+            <span>•</span>
+            Khu vực giảng viên
+        </footer>
+
+    </main>
+
 </div>
+
 {% else %}
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}

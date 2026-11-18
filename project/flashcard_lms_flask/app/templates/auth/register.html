@@ -1,0 +1,328 @@
+
+{% extends "base.html" %}
+
+{% block title %}Đăng ký tài khoản | FlashLearn{% endblock %}
+
+{% block head %}
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/auth.css') }}"
+>
+{% endblock %}
+
+{% block public_content %}
+
+<div class="auth-page register-page">
+
+    <!-- 1. HEADER -->
+    <header class="auth-header">
+        <div class="auth-header-container">
+
+            <a class="auth-logo" href="{{ url_for('index') }}">
+                FlashLearn
+            </a>
+
+            <nav class="auth-navigation">
+                <a href="{{ url_for('index') }}">Trang chủ</a>
+                <a href="#support">Hỗ trợ</a>
+
+                <a href="#" class="auth-avatar" aria-label="Tài khoản">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="8" r="3"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                fill="none"/>
+                        <path d="M5.5 19c0-3.5 2.7-5.5 6.5-5.5s6.5 2 6.5 5.5"
+                              stroke="currentColor"
+                              stroke-width="1.8"
+                              stroke-linecap="round"
+                              fill="none"/>
+                    </svg>
+                </a>
+            </nav>
+
+        </div>
+    </header>
+
+
+    <!-- 2. MAIN CONTENT -->
+    <main class="auth-main register-main">
+
+        <div class="auth-content register-content">
+
+            <section class="auth-card register-card">
+
+                <!-- Registration badge -->
+                <div class="register-badge">
+                    <span aria-hidden="true">♧</span>
+                    Đăng ký Học viên
+                </div>
+
+
+                <!-- Heading -->
+                <div class="register-heading">
+
+                    <h1>Tạo tài khoản Học viên</h1>
+
+                    <p>
+                        Bắt đầu hành trình ghi nhớ từ vựng với
+                        Spaced Repetition
+                    </p>
+
+                </div>
+
+
+                <!-- Information notice -->
+                <div class="register-notice" role="note">
+
+                    <span class="notice-icon" aria-hidden="true">i</span>
+
+                    <p>
+                        Đăng ký công khai mặc định tạo tài khoản
+                        <strong>Học viên (Learner)</strong> để tham gia
+                        các lớp học và bộ thẻ ghi nhớ.
+                    </p>
+
+                </div>
+
+
+                <!-- Registration form -->
+                <form method="post" class="auth-form register-form">
+
+                    <!-- CSRF protection -->
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="{{ csrf_token() }}"
+                    >
+
+
+                    <!-- Full name -->
+                    <div class="auth-field register-field">
+
+                        <label for="full_name">
+                            Họ và tên
+                            <span class="required-mark">*</span>
+                        </label>
+
+                        <div class="auth-input-wrapper">
+
+                            <input
+                                type="text"
+                                id="full_name"
+                                name="full_name"
+                                placeholder="Nguyễn Văn A"
+                                autocomplete="name"
+                                maxlength="100"
+                                value="{{ request.form.get('full_name', '') }}"
+                                required
+                            >
+
+                            <span class="auth-input-icon"
+                                  aria-hidden="true">♙</span>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Email -->
+                    <div class="auth-field register-field">
+
+                        <label for="register_email">
+                            Địa chỉ Email
+                            <span class="required-mark">*</span>
+                        </label>
+
+                        <div class="auth-input-wrapper">
+
+                            <input
+                                type="email"
+                                id="register_email"
+                                name="email"
+                                placeholder="vidu@email.com"
+                                autocomplete="email"
+                                maxlength="255"
+                                value="{{ request.form.get('email', '') }}"
+                                required
+                            >
+
+                            <span class="auth-input-icon"
+                                  aria-hidden="true">✉</span>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Password -->
+                    <div class="auth-field register-field">
+
+                        <label for="register_password">
+                            Mật khẩu
+                            <span class="required-mark">*</span>
+                        </label>
+
+                        <div class="auth-input-wrapper">
+
+                            <input
+                                type="password"
+                                id="register_password"
+                                name="password"
+                                placeholder="Tối thiểu 8 ký tự"
+                                autocomplete="new-password"
+                                minlength="8"
+                                required
+                            >
+
+                            <button
+                                type="button"
+                                class="auth-password-toggle"
+                                data-password-toggle
+                                data-target="register_password"
+                                aria-label="Hiện mật khẩu"
+                                aria-pressed="false"
+                            >
+                                <span aria-hidden="true">◉</span>
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Confirm password -->
+                    <div class="auth-field register-field">
+
+                        <label for="confirm_password">
+                            Xác nhận mật khẩu
+                            <span class="required-mark">*</span>
+                        </label>
+
+                        <div class="auth-input-wrapper">
+
+                            <input
+                                type="password"
+                                id="confirm_password"
+                                name="confirm_password"
+                                placeholder="Nhập lại mật khẩu"
+                                autocomplete="new-password"
+                                minlength="8"
+                                required
+                            >
+
+                            <button
+                                type="button"
+                                class="auth-password-toggle"
+                                data-password-toggle
+                                data-target="confirm_password"
+                                aria-label="Hiện mật khẩu"
+                                aria-pressed="false"
+                            >
+                                <span aria-hidden="true">◉</span>
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Terms and privacy policy -->
+                    <label class="register-terms">
+
+                        <input
+                            type="checkbox"
+                            name="accept_terms"
+                            value="1"
+                            required
+                        >
+
+                        <span>
+                            Tôi đồng ý với
+                            <a href="#terms">Điều khoản sử dụng</a>
+                            và
+                            <a href="#privacy">Chính sách bảo mật</a>
+                            của hệ thống.
+                        </span>
+
+                    </label>
+
+
+                    <!-- Submit button -->
+                    <button
+                        type="submit"
+                        class="auth-submit register-submit"
+                    >
+                        <span>Đăng ký tài khoản</span>
+                        <span aria-hidden="true">→</span>
+                    </button>
+
+                </form>
+
+
+                <!-- Login link -->
+                <div class="auth-register register-login-link">
+
+                    <span>Đã có tài khoản?</span>
+
+                    <a href="{{ url_for('auth.login') }}">
+                        Đăng nhập ngay ›
+                    </a>
+
+                </div>
+
+            </section>
+
+
+            <!-- Security information -->
+            <div class="auth-benefits register-benefits">
+
+                <div class="auth-benefit">
+                    <span aria-hidden="true">✿</span>
+                    Bảo mật dữ liệu tuyệt đối
+                </div>
+
+                <span class="benefit-separator" aria-hidden="true">•</span>
+
+                <div class="auth-benefit">
+                    <span aria-hidden="true">◉</span>
+                    Kích hoạt ngay lập tức
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- 3. FOOTER -->
+    <footer class="auth-footer">
+
+        <div class="auth-footer-container">
+
+            <p>
+                © 2025 Hệ thống học trực tuyến Flashcard -
+                Nền tảng ghi nhớ ngắt quãng thông minh
+            </p>
+
+            <nav class="auth-footer-links">
+                <a href="#terms">Điều khoản sử dụng</a>
+                <a href="#privacy">Chính sách bảo mật</a>
+                <a href="#support">Liên hệ hỗ trợ</a>
+            </nav>
+
+        </div>
+
+    </footer>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script
+    src="{{ url_for('static', filename='js/auth.js') }}"
+    defer
+></script>
+{% endblock %}

@@ -1,0 +1,422 @@
+
+{% extends "base.html" %}
+
+{% block title %}
+    {{ page_title }} | Flashcard LMS
+{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{{ url_for('lecturer.courses') }}">
+        Khóa học của tôi
+    </a>
+    / {{ page_title }}
+{% endblock %}
+
+
+{% block content %}
+
+<div class="course-form-page">
+
+    <!-- PAGE HEADING -->
+    <div class="course-form-heading">
+
+        <div>
+            <div class="eyebrow">COURSE MANAGEMENT</div>
+
+            <h1>{{ page_title }}</h1>
+
+            <p class="muted">
+                Quản lý thông tin cơ bản của khóa học.
+            </p>
+        </div>
+
+        <a
+            href="{{ url_for('lecturer.courses') }}"
+            class="btn btn-secondary"
+        >
+            ← Quay lại
+        </a>
+
+    </div>
+
+
+    <!-- FORM LAYOUT -->
+    <div class="course-form-layout">
+
+
+        <!-- MAIN FORM -->
+        <section class="panel course-form-panel">
+
+            <div class="course-form-panel-heading">
+
+                <div class="course-form-heading-icon">
+                    ▤
+                </div>
+
+                <div>
+                    <h2>Thông tin khóa học</h2>
+
+                    <p class="muted">
+                        Những thông tin có dấu * là bắt buộc.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <form
+                method="post"
+                class="course-form"
+                id="courseForm"
+            >
+
+                <!-- CSRF -->
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                >
+
+
+                <!-- COURSE NAME -->
+                <div class="course-form-field field-full">
+
+                    <label for="course_name">
+                        Tên khóa học
+                        <span class="required">*</span>
+                    </label>
+
+                    <input
+                        type="text"
+                        id="course_name"
+                        name="course_name"
+                        maxlength="200"
+                        placeholder="Ví dụ: Tiếng Anh IELTS 7.5+"
+                        value="{{ request.form.get('course_name', course.course_name if course else '') }}"
+                        required
+                    >
+
+                    <small>
+                        Tên khóa học giúp học viên nhận biết nội dung khóa học.
+                    </small>
+
+                </div>
+
+
+                <!-- LANGUAGE -->
+                <div class="course-form-field">
+
+                    <label for="languageSelect">
+                        Ngôn ngữ
+                        <span class="required">*</span>
+                    </label>
+
+                    <select
+                        name="language_id"
+                        id="languageSelect"
+                        required
+                    >
+
+                        <option value="">
+                            Chọn ngôn ngữ
+                        </option>
+
+                        {% for language in languages %}
+
+                            <option
+                                value="{{ language.language_id }}"
+
+                                {% if request.form.get('language_id')|string == language.language_id|string %}
+
+                                    selected
+
+                                {% elif not request.form.get('language_id') and course and course.language_id == language.language_id %}
+
+                                    selected
+
+                                {% endif %}
+                            >
+                                {{ language.language_name }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <!-- TOPIC -->
+                <div class="course-form-field">
+
+                    <label for="topicSelect">
+                        Chủ đề
+                    </label>
+
+                    <select
+                        name="topic_id"
+                        id="topicSelect"
+                    >
+
+                        <option value="">
+                            Chưa chọn chủ đề
+                        </option>
+
+                        {% for topic in topics %}
+
+                            <option
+                                value="{{ topic.topic_id }}"
+                                data-language="{{ topic.language_id }}"
+
+                                {% if request.form.get('topic_id')|string == topic.topic_id|string %}
+
+                                    selected
+
+                                {% elif not request.form.get('topic_id') and course and course.topic_id == topic.topic_id %}
+
+                                    selected
+
+                                {% endif %}
+                            >
+                                {{ topic.topic_name }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                    <small>
+                        Chủ đề phải thuộc ngôn ngữ đã chọn.
+                    </small>
+
+                </div>
+
+
+                <!-- DESCRIPTION -->
+                <div class="course-form-field field-full">
+
+                    <label for="description">
+                        Mô tả khóa học
+                    </label>
+
+                    <textarea
+                        id="description"
+                        name="description"
+                        rows="6"
+                        placeholder="Giới thiệu mục tiêu, nội dung và kiến thức học viên sẽ đạt được..."
+                    >{{ request.form.get('description', course.description if course else '') }}</textarea>
+
+                    <small>
+                        Hãy mô tả ngắn gọn nội dung và mục tiêu của khóa học.
+                    </small>
+
+                </div>
+
+
+                <!-- CURRENT STATUS -->
+                {% if course %}
+
+                    <div class="course-form-status field-full">
+
+                        <span>Trạng thái hiện tại</span>
+
+                        <strong class="status status-{{ course.status|lower }}">
+                            {% if course.status == 'DRAFT' %}
+                                Bản nháp
+                            {% elif course.status == 'PUBLISHED' %}
+                                Đã xuất bản
+                            {% elif course.status == 'UNPUBLISHED' %}
+                                Đã ẩn
+                            {% else %}
+                                {{ course.status }}
+                            {% endif %}
+                        </strong>
+
+                    </div>
+
+                {% endif %}
+
+
+                <!-- FORM ACTIONS -->
+                <div class="course-form-actions field-full">
+
+                    <a
+                        href="{{ url_for('lecturer.courses') }}"
+                        class="btn btn-secondary"
+                    >
+                        Hủy
+                    </a>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        {% if course %}
+                            Lưu thay đổi
+                        {% else %}
+                            Lưu khóa học
+                        {% endif %}
+                    </button>
+
+                </div>
+
+            </form>
+
+        </section>
+
+
+        <!-- INFORMATION PANEL -->
+        <aside class="course-form-aside">
+
+            <section class="panel">
+
+                <div class="course-form-aside-heading">
+                    <span>ⓘ</span>
+                    Lưu ý khi tạo khóa học
+                </div>
+
+                <div class="course-form-tip">
+
+                    <strong>1. Tên khóa học</strong>
+
+                    <p>
+                        Đặt tên ngắn gọn, rõ ràng và thể hiện
+                        nội dung chính của khóa học.
+                    </p>
+
+                </div>
+
+
+                <div class="course-form-tip">
+
+                    <strong>2. Ngôn ngữ và chủ đề</strong>
+
+                    <p>
+                        Chọn ngôn ngữ trước. Danh sách chủ đề
+                        sẽ được lọc theo ngôn ngữ đó.
+                    </p>
+
+                </div>
+
+
+                <div class="course-form-tip">
+
+                    <strong>3. Nội dung khóa học</strong>
+
+                    <p>
+                        Sau khi tạo khóa học, bạn có thể
+                        tiếp tục thêm bài học và bộ Flashcard.
+                    </p>
+
+                </div>
+
+
+                <div class="course-form-tip">
+
+                    <strong>4. Xuất bản khóa học</strong>
+
+                    <p>
+                        Khóa học mới được lưu ở trạng thái
+                        Bản nháp. Bạn cần ít nhất một bài học
+                        có lý thuyết hoặc Flashcard hợp lệ
+                        để xuất bản.
+                    </p>
+
+                </div>
+
+            </section>
+
+        </aside>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    // Lấy hai danh sách chọn
+    const languageSelect =
+        document.getElementById("languageSelect");
+
+    const topicSelect =
+        document.getElementById("topicSelect");
+
+
+    // Nếu không tìm thấy phần tử thì dừng
+    if (!languageSelect || !topicSelect) {
+        return;
+    }
+
+
+    // Lọc chủ đề theo ngôn ngữ
+    function filterTopics() {
+
+        const selectedLanguage = languageSelect.value;
+
+        const options = Array.from(topicSelect.options);
+
+        options.forEach(function (option, index) {
+
+            // Giữ nguyên lựa chọn mặc định
+            if (index === 0) {
+                return;
+            }
+
+            const optionLanguage = option.dataset.language;
+
+            option.hidden =
+                optionLanguage !== selectedLanguage;
+
+            // Nếu chủ đề không thuộc ngôn ngữ,
+            // bỏ lựa chọn hiện tại
+            if (option.hidden && option.selected) {
+                topicSelect.value = "";
+            }
+
+        });
+
+    }
+
+
+    // Khi thay đổi ngôn ngữ thì lọc lại chủ đề
+    languageSelect.addEventListener(
+        "change",
+        filterTopics
+    );
+
+
+    // Lọc ngay khi trang được mở
+    filterTopics();
+
+    // Ngăn gửi biểu mẫu nhiều lần
+    const courseForm = document.getElementById("courseForm");
+
+    if (courseForm) {
+
+        courseForm.addEventListener("submit", function () {
+
+            const submitButton = courseForm.querySelector(
+                'button[type="submit"]'
+            );
+
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = "Đang lưu...";
+            }
+
+        });
+
+    }
+
+});
+
+</script>
+
+{% endblock %}

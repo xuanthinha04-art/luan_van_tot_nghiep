@@ -208,38 +208,187 @@ def dashboard():
     )
 
 
+
 @lecturer_bp.get("/courses")
 @lecturer_required
 def courses():
+
+    # ========================================
+    # 1. LẤY ĐIỀU KIỆN TÌM KIẾM VÀ LỌC
+    # ========================================
+
     q = request.args.get("q", "").strip()
     status = request.args.get("status", "").strip()
+    language_raw = request.args.get("language_id", "").strip()
+
+    allowed_statuses = {
+        "DRAFT",
+        "PUBLISHED",
+        "UNPUBLISHED",
+    }
+
+    if status not in allowed_statuses:
+        status = ""
+
+    try:
+        language_id = int(language_raw) if language_raw else None
+        if language_id is not None and language_id <= 0:
+            language_id = None
+    except ValueError:
+        language_id = None
+
+    # ========================================
+    # 2. XÂY DỰNG ĐIỀU KIỆN SQL
+    # ========================================
+
     where = [visible_course_clause()]
-    params = {"user_id": current_user.user_id, "q": f"%{q}%", "status": status}
+
+    params = {
+        "user_id": current_user.user_id,
+        "q": f"%{q}%",
+    }
+
     if q:
         where.append("c.course_name LIKE :q")
-    if status in {"DRAFT", "PUBLISHED", "UNPUBLISHED"}:
+
+    if status:
         where.append("c.status = :status")
+        params["status"] = status
+
+    if language_id is not None:
+        where.append("c.language_id = :language_id")
+        params["language_id"] = language_id
+
+    # ========================================
+    # 3. LẤY DANH SÁCH KHÓA HỌC
+    # ========================================
+
     sql = f"""
-        SELECT c.course_id, c.course_name, c.description, c.status,
-               c.created_at, l.language_name, t.topic_name,
-               (SELECT COUNT(*) FROM lessons le
-                WHERE le.course_id = c.course_id) AS lessons_count,
-               (SELECT COUNT(*) FROM enrollments e
-                WHERE e.course_id = c.course_id AND e.status = 'APPROVED') AS learners_count
+        SELECT
+            c.course_id,
+            c.course_name,
+            c.description,
+            c.status,
+            c.created_at,
+            c.created_by_user_id,
+
+            l.language_name,
+            t.topic_name,
+
+            (
+                SELECT COUNT(*)
+                FROM lessons le
+                WHERE le.course_id = c.course_id
+            ) AS lessons_count,
+
+            (
+                SELECT COUNT(*)
+                FROM enrollments e
+                WHERE e.course_id = c.course_id
+                  AND e.status = 'APPROVED'
+            ) AS learners_count,
+
+            (
+                SELECT COUNT(DISTINCT vi.item_id)
+                FROM lessons le2
+                JOIN lesson_vocabulary_sets lvs
+                    ON lvs.lesson_id = le2.lesson_id
+                JOIN vocabulary_sets vs
+                    ON vs.set_id = lvs.set_id
+                JOIN vocabulary_items vi
+                    ON vi.set_id = vs.set_id
+                WHERE le2.course_id = c.course_id
+                  AND vs.status = 'ACTIVE'
+                  AND vi.status = 'ACTIVE'
+            ) AS flashcards_count,
+
+            CASE
+                WHEN c.created_by_user_id = :user_id THEN 1
+
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM course_lecturers cl
+                    WHERE cl.course_id = c.course_id
+                      AND cl.lecturer_user_id = :user_id
+                      AND cl.permission = 'EDIT'
+                ) THEN 1
+
+                ELSE 0
+            END AS can_edit
+
         FROM courses c
-        JOIN languages l ON l.language_id = c.language_id
+
+        JOIN languages l
+            ON l.language_id = c.language_id
+
         LEFT JOIN topics t
-               ON t.topic_id = c.topic_id AND t.language_id = c.language_id
-        WHERE {' AND '.join(where)}
+            ON t.topic_id = c.topic_id
+           AND t.language_id = c.language_id
+
+        WHERE {" AND ".join(where)}
+
         ORDER BY c.created_at DESC
     """
-    rows = db.session.execute(text(sql), params).mappings().all()
+
+    rows = db.session.execute(
+        text(sql),
+        params
+    ).mappings().all()
+
+    # ========================================
+    # 4. THỐNG KÊ TẤT CẢ KHÓA HỌC
+    # ========================================
+
+    summary = db.session.execute(
+        text(
+            f"""
+            SELECT
+                COUNT(*) AS total_count,
+
+                COALESCE(
+                    SUM(c.status = 'PUBLISHED'), 0
+                ) AS published_count,
+
+                COALESCE(
+                    SUM(c.status = 'DRAFT'), 0
+                ) AS draft_count,
+
+                COALESCE(
+                    SUM(c.status = 'UNPUBLISHED'), 0
+                ) AS unpublished_count
+
+            FROM courses c
+
+            WHERE {visible_course_clause()}
+            """
+        ),
+        {"user_id": current_user.user_id},
+    ).mappings().first()
+
+    # ========================================
+    # 5. TRẢ DỮ LIỆU CHO GIAO DIỆN
+    # ========================================
+
     return render_template(
         "lecturer/courses.html",
+
         courses=[dict(row) for row in rows],
+
+        summary=dict(summary or {}),
+
+        languages=get_languages(),
+
         q=q,
+
         selected_status=status,
+
+        selected_language=(
+            str(language_id)
+            if language_id is not None
+            else ""
+        ),
     )
+
 
 
 def validate_course_form():
