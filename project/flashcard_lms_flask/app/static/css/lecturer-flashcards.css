@@ -1,0 +1,115 @@
+/* ==========================================
+   FLASHCARD SET DETAIL
+======================================== */
+.flashcard-detail-page {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+.flashcard-detail-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 22px;
+}
+
+.flashcard-detail-heading h1 {
+    margin: 0;
+    color: #172b40;
+    font-size: 27px;
+}
+
+.flashcard-detail-heading p {
+    margin: 6px 0 0;
+    color: #718078;
+    font-size: 12px;
+}
+
+.flashcard-detail-info {
+    margin-bottom: 20px;
+    padding: 22px;
+    background: #ffffff;
+    border: 1px solid #e7eaf0;
+    border-radius: 12px;
+}
+
+.flashcard-detail-info h2 {
+    margin: 0 0 10px;
+    color: #172b40;
+    font-size: 19px;
+}
+
+.flashcard-items-section {
+    background: #ffffff;
+    border: 1px solid #e7eaf0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.flashcard-items-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px;
+}
+
+.flashcard-items-heading h2 {
+    margin: 0;
+    color: #172b40;
+    font-size: 16px;
+}
+
+.flashcard-items-heading p {
+    margin: 5px 0 0;
+    color: #718078;
+    font-size: 11px;
+}
+
+.flashcard-items-table {
+    min-width: 750px;
+}
+
+.flashcard-term {
+    color: #172b40;
+    font-size: 12px;
+}
+
+.flashcard-example {
+    color: #68766f;
+    font-size: 11px;
+    font-style: italic;
+}
+
+.lesson-flashcard-chip {
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.lesson-flashcard-chip:hover {
+    color: #3939ad;
+    background: #dfdfff;
+    text-decoration: underline;
+}
+
+@media (max-width: 700px) {
+    .flashcard-detail-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .flashcard-detail-heading > a {
+        width: 100%;
+    }
+
+    .flashcard-detail-info {
+        padding: 16px;
+    }
+
+    .flashcard-items-heading {
+        padding: 15px;
+    }
+}

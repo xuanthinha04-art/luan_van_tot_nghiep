@@ -3,6 +3,16 @@
 
 {% block title %}Quản lý bài học | {{ course.course_name }}{% endblock %}
 
+{% block head %}
+    {{ super() }}
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/lecturer-lessons.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/lecturer-flashcards.css') }}">
+{% endblock %}
+
 {% block breadcrumb %}
     <a href="{{ url_for('lecturer.courses') }}">Khóa học của tôi</a>
     <span>›</span>

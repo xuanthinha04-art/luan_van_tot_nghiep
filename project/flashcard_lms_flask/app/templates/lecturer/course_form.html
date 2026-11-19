@@ -5,6 +5,14 @@
     {{ page_title }} | Flashcard LMS
 {% endblock %}
 
+{% block head %}
+    {{ super() }}
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/lecturer-courses.css') }}"
+    >
+{% endblock %}
+
 {% block breadcrumb %}
     <a href="{{ url_for('lecturer.courses') }}">
         Khóa học của tôi

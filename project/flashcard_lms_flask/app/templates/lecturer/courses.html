@@ -3,6 +3,14 @@
 
 {% block title %}Khóa học của tôi | Flashcard LMS{% endblock %}
 
+{% block head %}
+    {{ super() }}
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/lecturer-courses.css') }}"
+    >
+{% endblock %}
+
 {% block content %}
 
 <div class="courses-page">
