@@ -1,0 +1,1256 @@
+
+{% extends "base.html" %}
+
+{% block title %}Quản lý bài học | {{ course.course_name }}{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{{ url_for('lecturer.courses') }}">Khóa học của tôi</a>
+    <span>›</span>
+    {{ course.course_name }}
+    <span>›</span>
+    Quản lý bài học
+{% endblock %}
+
+{% block content %}
+
+<div class="lesson-page">
+
+    <!-- =====================================
+         1. PAGE HEADER
+    ====================================== -->
+
+    <div class="lesson-page-heading">
+
+        <div>
+            <div class="lesson-eyebrow">LESSON MANAGEMENT</div>
+
+            <h1>Quản lý bài học</h1>
+
+            <p>
+                Tổ chức nội dung học tập và các bộ Flashcard trong khóa học.
+            </p>
+        </div>
+
+        {% if can_edit_course %}
+        <button
+            type="button"
+            class="lesson-primary-button"
+            data-open-dialog="createLessonDialog"
+        >
+            ＋ Tạo bài học mới
+        </button>
+        {% endif %}
+
+    </div>
+
+
+    <!-- =====================================
+         2. COURSE INFORMATION
+    ====================================== -->
+
+    <section class="lesson-course-info">
+
+        <div class="lesson-course-info-main">
+
+            <h2>{{ course.course_name }}</h2>
+
+            <div class="lesson-course-tags">
+
+                <span class="lesson-tag">
+                    {{ course.language_name }}
+                </span>
+
+                {% if course.topic_name %}
+                <span class="lesson-tag lesson-tag-topic">
+                    {{ course.topic_name }}
+                </span>
+                {% else %}
+                <span class="lesson-tag">
+                    Chưa phân chủ đề
+                </span>
+                {% endif %}
+
+                {% if course.status == 'DRAFT' %}
+                    <span class="lesson-tag lesson-tag-draft">
+                        ● Bản nháp
+                    </span>
+                {% elif course.status == 'PUBLISHED' %}
+                    <span class="lesson-tag lesson-tag-published">
+                        ● Đã xuất bản
+                    </span>
+                {% elif course.status == 'UNPUBLISHED' %}
+                    <span class="lesson-tag">
+                        ● Đã ẩn
+                    </span>
+                {% endif %}
+
+            </div>
+
+            <p class="lesson-course-description">
+                {{ course.description or 'Khóa học chưa có mô tả.' }}
+            </p>
+
+        </div>
+
+        {% if can_edit_course %}
+        <div class="lesson-course-info-action">
+            <a
+                href="{{ url_for('lecturer.edit_course', course_id=course.course_id) }}"
+                class="lesson-secondary-button"
+            >
+                ✎ Chỉnh sửa thông tin khóa học
+            </a>
+        </div>
+        {% endif %}
+
+    </section>
+
+
+    <!-- =====================================
+         3. SUMMARY CARDS
+    ====================================== -->
+
+    <section class="lesson-summary-grid">
+
+        <article class="lesson-summary-card">
+
+            <div class="lesson-summary-icon">
+                ▤
+            </div>
+
+            <div>
+                <span>TỔNG SỐ BÀI HỌC</span>
+
+                <strong>
+                    {{ summary.total_lessons or 0 }}
+                </strong>
+
+                <small>bài học</small>
+            </div>
+
+        </article>
+
+
+        <article class="lesson-summary-card">
+
+            <div class="lesson-summary-icon purple">
+                ◈
+            </div>
+
+            <div>
+                <span>BỘ FLASHCARD ĐÃ GẮN</span>
+
+                <strong>
+                    {{ summary.total_flashcard_sets or 0 }}
+                </strong>
+
+                <small>bộ thẻ</small>
+            </div>
+
+        </article>
+
+
+        <article class="lesson-summary-card">
+
+            <div class="lesson-summary-icon teal">
+                A
+            </div>
+
+            <div>
+                <span>TỪ VỰNG TRONG KHÓA HỌC</span>
+
+                <strong>
+                    {{ summary.total_vocabulary or 0 }}
+                </strong>
+
+                <small>từ vựng</small>
+            </div>
+
+        </article>
+
+    </section>
+
+
+    <!-- =====================================
+         4. LESSON LIST
+    ====================================== -->
+
+    <section class="lesson-list-section">
+
+        {% if lessons %}
+
+        <!-- SEARCH AND FILTER -->
+
+        <div class="lesson-toolbar">
+
+            <div class="lesson-search">
+
+                <span>⌕</span>
+
+                <input
+                    type="search"
+                    id="lessonSearch"
+                    placeholder="Tìm kiếm bài học..."
+                    autocomplete="off"
+                >
+
+            </div>
+
+
+            <div class="lesson-toolbar-options">
+
+                <div class="lesson-filter-tabs">
+
+                    <button
+                        type="button"
+                        class="lesson-filter-button active"
+                        data-filter="all"
+                    >
+                        Tất cả bài học
+                        (<span id="allCount">0</span>)
+                    </button>
+
+                    <button
+                        type="button"
+                        class="lesson-filter-button"
+                        data-filter="with"
+                    >
+                        Có Flashcard
+                        (<span id="withCount">0</span>)
+                    </button>
+
+                    <button
+                        type="button"
+                        class="lesson-filter-button"
+                        data-filter="without"
+                    >
+                        Chưa gắn Flashcard
+                        (<span id="withoutCount">0</span>)
+                    </button>
+
+                </div>
+
+
+                <select id="lessonSort" class="lesson-sort-select">
+
+                    <option value="order_asc">
+                        Sắp xếp: Thứ tự bài học (1 → cuối)
+                    </option>
+
+                    <option value="order_desc">
+                        Thứ tự bài học (cuối → 1)
+                    </option>
+
+                    <option value="name_asc">
+                        Tên bài học (A → Z)
+                    </option>
+
+                    <option value="name_desc">
+                        Tên bài học (Z → A)
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+
+        <!-- LESSON TABLE -->
+
+        <div class="lesson-table-wrapper">
+
+            <table class="lesson-table">
+
+                <thead>
+                    <tr>
+                        <th class="lesson-col-name">STT & TÊN BÀI HỌC</th>
+                        <th class="lesson-col-description">MÔ TẢ NỘI DUNG</th>
+                        <th class="lesson-col-flashcards">BỘ FLASHCARD LIÊN KẾT</th>
+                        <th class="lesson-col-vocabulary">TỔNG TỪ VỰNG</th>
+                        <th class="lesson-col-status">TRẠNG THÁI</th>
+                        <th class="lesson-col-action">THAO TÁC</th>
+                    </tr>
+                </thead>
+
+
+                <tbody id="lessonTableBody">
+
+                    {% for lesson in lessons %}
+
+                    <tr
+                        class="lesson-data-row"
+
+                        data-lesson-id="{{ lesson.lesson_id }}"
+
+                        data-lesson-name="{{ lesson.lesson_name|lower }}"
+
+                        data-lesson-order="{{ lesson.lesson_order }}"
+
+                        data-has-flashcards="{{
+                            '1' if lesson.flashcard_sets_count > 0 else '0'
+                        }}"
+                    >
+
+                        <!-- NAME -->
+
+                        <td class="lesson-name-cell">
+
+                            <div class="lesson-name-content">
+
+                                <span class="lesson-number">
+                                    Bài {{ "%02d"|format(lesson.lesson_order) }}
+                                </span>
+
+                                <div>
+                                    <strong>
+                                        {{ lesson.lesson_name }}
+                                    </strong>
+
+                                    <small>
+                                        ID: LES-{{ lesson.lesson_id }}
+                                    </small>
+                                </div>
+
+                            </div>
+
+                        </td>
+
+
+                        <!-- DESCRIPTION -->
+
+                        <td class="lesson-description-cell">
+
+                            <p>
+                                {{ lesson.description or 'Chưa có mô tả nội dung.' }}
+                            </p>
+
+                        </td>
+
+
+                        <!-- FLASHCARD SETS -->
+
+                        <td class="lesson-flashcard-cell">
+
+                            {% if lesson.vocabulary_sets %}
+
+                                <div class="lesson-flashcard-list">
+
+                                    {% for vocabulary_set in lesson.vocabulary_sets %}
+
+                                    <span
+                                        class="lesson-flashcard-chip"
+                                        title="{{ vocabulary_set.set_name }}"
+                                    >
+                                        ◈
+                                        {{ vocabulary_set.set_name }}
+
+                                        {% if vocabulary_set.set_status != 'ACTIVE' %}
+                                            <small>(Ngừng hoạt động)</small>
+                                        {% endif %}
+
+                                    </span>
+
+                                    {% endfor %}
+
+                                </div>
+
+                            {% else %}
+
+                                <span class="lesson-no-flashcard">
+                                    Chưa gắn bộ thẻ
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- VOCABULARY COUNT -->
+
+                        <td class="lesson-vocabulary-cell">
+
+                            <strong>
+                                {{ lesson.vocabulary_count or 0 }}
+                            </strong>
+
+                            <span>từ</span>
+
+                        </td>
+
+
+                        <!-- STATUS -->
+
+                        <td class="lesson-status-cell">
+
+                            {% if lesson.status == 'DRAFT' %}
+
+                                <span class="lesson-status-badge draft">
+                                    Đang soạn thảo
+                                </span>
+
+                            {% elif lesson.status == 'PUBLISHED' %}
+
+                                <span class="lesson-status-badge completed">
+                                    Đã hoàn thành
+                                </span>
+
+                            {% else %}
+
+                                <span class="lesson-status-badge">
+                                    {{ lesson.status }}
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- ACTIONS -->
+
+                        <td class="lesson-action-cell">
+
+                            {% if can_edit_course %}
+
+                              <div class="lesson-action-buttons">
+
+                                  <button
+                                      type="button"
+                                      class="lesson-attach-button"
+                                      data-attach-lesson="{{ lesson.lesson_id }}"
+                                      {% if not vocabulary_sets %}
+                                          disabled
+                                          title="Chưa có bộ Flashcard phù hợp"
+                                      {% endif %}
+                                  >
+                                      ＋ Gắn Flashcard
+                                  </button>
+
+                                  <button
+                                      type="button"
+                                      class="lesson-create-set-button"
+                                      data-create-set-lesson="{{ lesson.lesson_id }}"
+                                  >
+                                      ＋ Tạo bộ mới
+                                  </button>
+
+                              </div>
+
+                              {% else %}
+
+                                <span class="lesson-readonly-label">
+                                    Chỉ xem
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+
+                    <!-- NO SEARCH RESULT -->
+
+                    <tr id="lessonNoResult" hidden>
+                        <td colspan="6" class="lesson-no-result">
+                            Không tìm thấy bài học phù hợp.
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+
+            <!-- TABLE FOOTER -->
+
+            <div class="lesson-table-footer">
+
+                <span id="lessonResultCount">
+                    Hiển thị {{ lessons|length }} bài học
+                </span>
+
+                <div class="lesson-pagination">
+
+                    <button
+                        type="button"
+                        id="lessonPrev"
+                        disabled
+                    >
+                        Trước
+                    </button>
+
+                    <span id="lessonPageNumber">1</span>
+
+                    <button
+                        type="button"
+                        id="lessonNext"
+                        disabled
+                    >
+                        Sau
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        {% else %}
+
+        <!-- EMPTY STATE -->
+
+        <div class="lesson-empty-state">
+
+            <div class="lesson-empty-icon">
+                ♧
+            </div>
+
+            <h2>Khóa học chưa có bài học</h2>
+
+            <p>
+                Hãy tạo bài học đầu tiên để bắt đầu xây dựng nội dung
+                khóa học và liên kết các bộ thẻ từ vựng phục vụ học viên.
+            </p>
+
+            {% if can_edit_course %}
+
+            <button
+                type="button"
+                class="lesson-primary-button"
+                data-open-dialog="createLessonDialog"
+            >
+                ⊕ Tạo bài học đầu tiên
+            </button>
+
+            {% endif %}
+
+        </div>
+
+        {% endif %}
+
+    </section>
+
+
+    <!-- =====================================
+         5. PUBLISH COURSE
+    ====================================== -->
+
+    {% if course.status != 'PUBLISHED' and can_edit_course %}
+
+    <form
+        method="POST"
+        action="{{ url_for('lecturer.publish_course', course_id=course.course_id) }}"
+        class="lesson-publish-box"
+    >
+
+        <input
+            type="hidden"
+            name="csrf_token"
+            value="{{ csrf_token() }}"
+        >
+
+        <div>
+            <strong>Xuất bản khóa học</strong>
+
+            <small>
+                Cần tối thiểu một bài học có nội dung lý thuyết
+                hoặc Flashcard hợp lệ.
+            </small>
+        </div>
+
+        <button type="submit" class="lesson-primary-button">
+            Xuất bản
+        </button>
+
+    </form>
+
+    {% elif course.status == 'PUBLISHED' %}
+
+    <div class="lesson-published-note">
+        ✓ Khóa học đã được xuất bản.
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- =====================================
+     6. CREATE LESSON DIALOG
+====================================== -->
+
+{% if can_edit_course %}
+
+<dialog id="createLessonDialog" class="lesson-dialog">
+
+    <div class="lesson-dialog-header">
+
+        <div>
+            <h2>Tạo bài học mới</h2>
+            <p>Nhập thông tin cơ bản cho bài học.</p>
+        </div>
+
+        <button
+            type="button"
+            class="lesson-dialog-close"
+            data-close-dialog
+        >
+            ×
+        </button>
+
+    </div>
+
+
+    <form
+        method="POST"
+        action="{{ url_for('lecturer.create_lesson', course_id=course.course_id) }}"
+        class="lesson-dialog-form"
+    >
+
+        <input
+            type="hidden"
+            name="csrf_token"
+            value="{{ csrf_token() }}"
+        >
+
+        <label>
+            Tên bài học <span>*</span>
+
+            <input
+                type="text"
+                name="lesson_name"
+                maxlength="200"
+                required
+                placeholder="Ví dụ: Unit 1 – Daily Activities"
+            >
+        </label>
+
+
+        <label>
+            Mô tả ngắn
+
+            <input
+                type="text"
+                name="description"
+                placeholder="Mục tiêu của bài học"
+            >
+        </label>
+
+
+        <label>
+            Nội dung lý thuyết
+
+            <textarea
+                name="theory_content"
+                rows="6"
+                placeholder="Nhập nội dung bài học..."
+            ></textarea>
+        </label>
+
+
+        <div class="lesson-dialog-actions">
+
+            <button
+                type="button"
+                class="lesson-secondary-button"
+                data-close-dialog
+            >
+                Hủy
+            </button>
+
+            <button type="submit" class="lesson-primary-button">
+                Lưu bài học
+            </button>
+
+        </div>
+
+    </form>
+
+</dialog>
+
+
+<!-- =====================================
+     7. ATTACH FLASHCARD DIALOG
+====================================== -->
+
+<dialog id="attachLessonDialog" class="lesson-dialog">
+
+    <div class="lesson-dialog-header">
+
+        <div>
+            <h2>Gắn bộ Flashcard</h2>
+            <p>Chọn bộ Flashcard muốn liên kết với bài học.</p>
+        </div>
+
+        <button
+            type="button"
+            class="lesson-dialog-close"
+            data-close-dialog
+        >
+            ×
+        </button>
+
+    </div>
+
+
+    {% if vocabulary_sets %}
+
+    <form
+        method="POST"
+        id="attachLessonForm"
+        data-url-template="{{ url_for('lecturer.attach_vocabulary_set', lesson_id=0) }}"
+        action="{{ url_for('lecturer.attach_vocabulary_set', lesson_id=0) }}"
+        class="lesson-dialog-form"
+    >
+
+        <input
+            type="hidden"
+            name="csrf_token"
+            value="{{ csrf_token() }}"
+        >
+
+        <label>
+            Bộ Flashcard <span>*</span>
+
+            <select name="set_id" required>
+
+                <option value="">
+                    -- Chọn bộ Flashcard --
+                </option>
+
+                {% for vocabulary_set in vocabulary_sets %}
+
+                <option value="{{ vocabulary_set.set_id }}">
+                    {{ vocabulary_set.set_name }}
+                    · {{ vocabulary_set.set_type }}
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+        </label>
+
+
+        <div class="lesson-dialog-actions">
+
+            <button
+                type="button"
+                class="lesson-secondary-button"
+                data-close-dialog
+            >
+                Hủy
+            </button>
+
+            <button type="submit" class="lesson-primary-button">
+                Gắn vào bài học
+            </button>
+
+        </div>
+
+    </form>
+
+    {% else %}
+
+    <div class="lesson-empty-message">
+        Chưa có bộ Flashcard phù hợp với ngôn ngữ của khóa học.
+    </div>
+
+    {% endif %}
+
+</dialog>
+
+
+<!-- CREATE FLASHCARD SET AND ATTACH TO LESSON -->
+
+<dialog id="createFlashcardSetDialog" class="lesson-dialog">
+
+    <div class="lesson-dialog-header">
+
+        <div>
+            <h2>Tạo bộ Flashcard mới</h2>
+            <p>
+                Tạo bộ từ vựng và tự động gắn vào bài học đang chọn.
+            </p>
+        </div>
+
+        <button
+            type="button"
+            class="lesson-dialog-close"
+            data-close-dialog
+        >
+            ×
+        </button>
+
+    </div>
+
+
+    <form
+        method="POST"
+        id="createFlashcardSetForm"
+        data-url-template="{{ url_for(
+            'lecturer.create_and_attach_vocabulary_set',
+            course_id=course.course_id,
+            lesson_id=0
+        ) }}"
+        action="{{ url_for(
+            'lecturer.create_and_attach_vocabulary_set',
+            course_id=course.course_id,
+            lesson_id=0
+        ) }}"
+        class="lesson-dialog-form"
+    >
+
+        <input
+            type="hidden"
+            name="csrf_token"
+            value="{{ csrf_token() }}"
+        >
+
+        <label>
+            Tên bộ Flashcard <span>*</span>
+
+            <input
+                type="text"
+                name="set_name"
+                maxlength="200"
+                required
+                placeholder="Ví dụ: Daily Activities"
+            >
+        </label>
+
+
+        <label>
+            Mô tả bộ Flashcard
+
+            <textarea
+                name="description"
+                rows="2"
+                placeholder="Mô tả nội dung của bộ từ vựng..."
+            ></textarea>
+        </label>
+
+
+        <label>
+            Danh sách từ vựng <span>*</span>
+
+            <textarea
+                name="vocabulary_entries"
+                rows="9"
+                required
+                placeholder="Wake up    Thức dậy    I wake up early.&#10;Brush teeth    Đánh răng    I brush my teeth."
+            ></textarea>
+        </label>
+
+        <div class="lesson-vocabulary-instruction">
+            <strong>Hướng dẫn nhập dữ liệu:</strong>
+
+            <p>
+                Mỗi dòng gồm: Từ vựng → Nghĩa → Ví dụ (không bắt buộc).
+            </p>
+
+            <p>
+                Sử dụng phím Tab giữa các cột. Bạn cũng có thể
+                sao chép trực tiếp nhiều dòng từ Excel và dán vào đây.
+            </p>
+        </div>
+
+
+        <div class="lesson-dialog-actions">
+
+            <button
+                type="button"
+                class="lesson-secondary-button"
+                data-close-dialog
+            >
+                Hủy
+            </button>
+
+            <button
+                type="submit"
+                class="lesson-primary-button"
+            >
+                Tạo bộ và gắn vào bài học
+            </button>
+
+        </div>
+
+    </form>
+
+</dialog>
+
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // =====================================
+  // INSERT TAB CHARACTER IN VOCABULARY TEXTAREA
+  // =====================================
+
+  const vocabularyTextarea = document.querySelector(
+      'textarea[name="vocabulary_entries"]'
+  );
+
+  if (vocabularyTextarea) {
+
+      vocabularyTextarea.addEventListener("keydown", function(event) {
+
+          // Chỉ xử lý phím Tab thông thường
+          if (
+              event.key === "Tab" &&
+              !event.shiftKey &&
+              !event.ctrlKey &&
+              !event.altKey &&
+              !event.metaKey
+          ) {
+
+              // Ngăn trình duyệt chuyển focus sang phần tử khác
+              event.preventDefault();
+
+              const start = this.selectionStart;
+              const end = this.selectionEnd;
+
+              // Chèn ký tự Tab tại vị trí con trỏ
+              this.setRangeText(
+                  "\t",
+                  start,
+                  end,
+                  "end"
+              );
+
+              // Thông báo nội dung đã thay đổi
+              this.dispatchEvent(
+                  new Event("input", { bubbles: true })
+              );
+          }
+
+      });
+
+  }
+
+    // =====================================
+    // 1. OPEN / CLOSE DIALOG
+    // =====================================
+
+    document.querySelectorAll("[data-open-dialog]").forEach(button => {
+
+        button.addEventListener("click", function () {
+
+            const dialogId = this.dataset.openDialog;
+            const dialog = document.getElementById(dialogId);
+
+            if (dialog) {
+                dialog.showModal();
+            }
+
+        });
+
+    });
+
+
+    document.querySelectorAll("[data-close-dialog]").forEach(button => {
+
+        button.addEventListener("click", function () {
+
+            const dialog = this.closest("dialog");
+
+            if (dialog) {
+                dialog.close();
+            }
+
+        });
+
+    });
+
+
+    // =====================================
+    // 2. ATTACH FLASHCARD TO LESSON
+    // =====================================
+
+    const attachForm = document.getElementById("attachLessonForm");
+    const attachDialog = document.getElementById("attachLessonDialog");
+
+    if (attachForm && attachDialog) {
+
+        document.querySelectorAll("[data-attach-lesson]").forEach(button => {
+
+            button.addEventListener("click", function () {
+
+                if (this.disabled) {
+                    return;
+                }
+
+                const lessonId = this.dataset.attachLesson;
+
+                const urlTemplate = attachForm.dataset.urlTemplate;
+
+                attachForm.action = urlTemplate.replace(
+                    "/0/attach-set",
+                    "/" + lessonId + "/attach-set"
+                );
+
+                attachDialog.showModal();
+
+            });
+
+        });
+
+    }
+
+    // =====================================
+    // CREATE FLASHCARD SET FOR A LESSON
+    // =====================================
+
+    const createSetDialog = document.getElementById(
+        "createFlashcardSetDialog"
+    );
+
+    const createSetForm = document.getElementById(
+        "createFlashcardSetForm"
+    );
+
+    if (createSetDialog && createSetForm) {
+
+        const createSetUrlTemplate =
+            createSetForm.dataset.urlTemplate;
+
+        document.querySelectorAll("[data-create-set-lesson]")
+            .forEach(button => {
+
+                button.addEventListener("click", function () {
+
+                    const lessonId = this.dataset.createSetLesson;
+
+                    // Cập nhật URL theo bài học được chọn
+                    createSetForm.action =
+                        createSetUrlTemplate.replace(
+                            "/lessons/0/flashcard-sets/create",
+                            "/lessons/" + lessonId + "/flashcard-sets/create"
+                        );
+
+                    createSetDialog.showModal();
+
+                });
+
+            });
+
+    }
+
+    // =====================================
+    // 3. SEARCH / FILTER / SORT / PAGINATION
+    // =====================================
+
+    const tableBody = document.getElementById("lessonTableBody");
+
+    if (!tableBody) {
+        return;
+    }
+
+    const allRows = Array.from(
+        tableBody.querySelectorAll(".lesson-data-row")
+    );
+
+    const searchInput = document.getElementById("lessonSearch");
+    const sortSelect = document.getElementById("lessonSort");
+
+    const filterButtons = document.querySelectorAll(
+        ".lesson-filter-button"
+    );
+
+    const noResult = document.getElementById("lessonNoResult");
+
+    const resultCount = document.getElementById("lessonResultCount");
+
+    const prevButton = document.getElementById("lessonPrev");
+    const nextButton = document.getElementById("lessonNext");
+
+    const pageNumber = document.getElementById("lessonPageNumber");
+
+    const PAGE_SIZE = 6;
+
+    let activeFilter = "all";
+    let currentPage = 1;
+
+
+    // Đếm dữ liệu theo nhóm
+    const withFlashcards = allRows.filter(
+        row => row.dataset.hasFlashcards === "1"
+    ).length;
+
+    const withoutFlashcards = allRows.length - withFlashcards;
+
+    document.getElementById("allCount").textContent = allRows.length;
+    document.getElementById("withCount").textContent = withFlashcards;
+    document.getElementById("withoutCount").textContent = withoutFlashcards;
+
+
+    function updateLessonTable() {
+
+        const keyword = searchInput.value
+            .trim()
+            .toLocaleLowerCase("vi");
+
+        let filteredRows = allRows.filter(row => {
+
+            const name = row.dataset.lessonName;
+
+            const hasFlashcards = row.dataset.hasFlashcards === "1";
+
+            const matchesSearch = name.includes(keyword);
+
+            let matchesFilter = true;
+
+            if (activeFilter === "with") {
+                matchesFilter = hasFlashcards;
+            }
+
+            if (activeFilter === "without") {
+                matchesFilter = !hasFlashcards;
+            }
+
+            return matchesSearch && matchesFilter;
+
+        });
+
+
+        // Sắp xếp
+        const sortType = sortSelect.value;
+
+        filteredRows.sort((a, b) => {
+
+            const orderA = Number(a.dataset.lessonOrder);
+            const orderB = Number(b.dataset.lessonOrder);
+
+            const nameA = a.dataset.lessonName;
+            const nameB = b.dataset.lessonName;
+
+            if (sortType === "order_desc") {
+                return orderB - orderA;
+            }
+
+            if (sortType === "name_asc") {
+                return nameA.localeCompare(nameB, "vi");
+            }
+
+            if (sortType === "name_desc") {
+                return nameB.localeCompare(nameA, "vi");
+            }
+
+            return orderA - orderB;
+
+        });
+
+
+        // Phân trang
+        const totalPages = Math.max(
+            1,
+            Math.ceil(filteredRows.length / PAGE_SIZE)
+        );
+
+        currentPage = Math.min(currentPage, totalPages);
+
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+
+        const visibleRows = filteredRows.slice(start, end);
+
+        allRows.forEach(row => {
+            row.hidden = true;
+        });
+
+        visibleRows.forEach(row => {
+            row.hidden = false;
+            tableBody.appendChild(row);
+        });
+
+
+        noResult.hidden = filteredRows.length > 0;
+
+        resultCount.textContent =
+            `Hiển thị ${visibleRows.length} trong tổng số ${filteredRows.length} bài học`;
+
+
+        pageNumber.textContent = currentPage;
+
+        prevButton.disabled = currentPage <= 1;
+
+        nextButton.disabled = currentPage >= totalPages;
+
+    }
+
+
+    // Thay đổi bộ lọc
+    filterButtons.forEach(button => {
+
+        button.addEventListener("click", function () {
+
+            filterButtons.forEach(item => {
+                item.classList.remove("active");
+            });
+
+            this.classList.add("active");
+
+            activeFilter = this.dataset.filter;
+
+            currentPage = 1;
+
+            updateLessonTable();
+
+        });
+
+    });
+
+
+    searchInput.addEventListener("input", function () {
+
+        currentPage = 1;
+
+        updateLessonTable();
+
+    });
+
+
+    sortSelect.addEventListener("change", function () {
+
+        currentPage = 1;
+
+        updateLessonTable();
+
+    });
+
+
+    prevButton.addEventListener("click", function () {
+
+        if (currentPage > 1) {
+            currentPage--;
+            updateLessonTable();
+        }
+
+    });
+
+
+    nextButton.addEventListener("click", function () {
+
+        currentPage++;
+
+        updateLessonTable();
+
+    });
+
+
+    updateLessonTable();
+
+});
+</script>
+
+{% endblock %}

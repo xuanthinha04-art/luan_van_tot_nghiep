@@ -298,6 +298,56 @@
 
                             {% endif %}
 
+                            <details class="course-actions-menu">
+                                <summary title="Thao tác khác" aria-label="Thao tác khác">
+                                    ⋮
+                                </summary>
+
+                                <div class="course-actions-dropdown">
+
+                                    {# Chỉ khóa học đã xuất bản mới có nút Ẩn #}
+                                    {% if course.status == 'PUBLISHED' %}
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for('lecturer.hide_course', course_id=course.course_id) }}"
+                                        onsubmit="return confirm('Bạn có chắc chắn muốn ẩn khóa học này không?');"
+                                    >
+                                        {# CSRF token bảo vệ biểu mẫu POST #}
+                                        <input
+                                            type="hidden"
+                                            name="csrf_token"
+                                            value="{{ csrf_token() }}"
+                                        >
+
+                                        <button type="submit" class="course-action-hide">
+                                            Ẩn khóa học
+                                        </button>
+                                    </form>
+                                    {% endif %}
+
+                                    {# Chỉ bản nháp hoặc khóa học đã ẩn mới có nút Xóa #}
+                                    {% if course.status in ['DRAFT', 'UNPUBLISHED'] %}
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for('lecturer.delete_course', course_id=course.course_id) }}"
+                                        onsubmit="return confirm('Bạn có chắc chắn muốn xóa khóa học này không? Thao tác này không thể hoàn tác.');"
+                                    >
+                                        {# CSRF token bảo vệ biểu mẫu POST #}
+                                        <input
+                                            type="hidden"
+                                            name="csrf_token"
+                                            value="{{ csrf_token() }}"
+                                        >
+
+                                        <button type="submit" class="course-action-delete">
+                                            Xóa khóa học
+                                        </button>
+                                    </form>
+                                    {% endif %}
+
+                                </div>
+                            </details>
+
                         </div>
 
                     </div>

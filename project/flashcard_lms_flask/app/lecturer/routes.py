@@ -1,10 +1,12 @@
 from datetime import datetime
 
 from flask import (
-    Blueprint, abort, flash, redirect, render_template, request, url_for
+    Blueprint, abort, current_app, flash,
+    redirect, render_template, request, url_for
 )
 from flask_login import current_user, login_required
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions import db
 
@@ -441,7 +443,9 @@ def validate_course_form():
         "topic_id": topic_id,
     }, None
 
-
+    # ========================================
+    # TẠO KHÓA HỌC
+    # ========================================
 @lecturer_bp.route("/courses/create", methods=["GET", "POST"])
 @lecturer_required
 def create_course():
@@ -552,31 +556,386 @@ def publish_course(course_id):
     return redirect(url_for("lecturer.courses"))
 
 
+    # ========================================
+    # ẨN KHÓA HỌC
+    # ========================================
+@lecturer_bp.post("/courses/<int:course_id>/hide")
+@lecturer_required
+def hide_course(course_id):
+    # Bước 1: Kiểm tra khóa học và quyền chỉnh sửa
+    course = get_course(course_id, require_edit=True)
+
+    # Bước 2: Chỉ cho phép ẩn khóa học đã xuất bản
+    if course["status"] != "PUBLISHED":
+        flash(
+            "Chỉ có thể ẩn khóa học đã xuất bản.",
+            "warning"
+        )
+        return redirect(url_for("lecturer.courses"))
+
+    try:
+        # Bước 3: Chuyển trạng thái sang UNPUBLISHED
+        result = db.session.execute(
+            text("""
+                UPDATE courses
+                SET status = 'UNPUBLISHED'
+                WHERE course_id = :course_id
+                  AND status = 'PUBLISHED'
+            """),
+            {"course_id": course_id}
+        )
+
+        if result.rowcount != 1:
+            db.session.rollback()
+            flash(
+                "Trạng thái khóa học đã thay đổi. Vui lòng tải lại trang.",
+                "warning"
+            )
+            return redirect(url_for("lecturer.courses"))
+
+        # Bước 4: Lưu thay đổi
+        db.session.commit()
+
+        flash(
+            "Đã ẩn khóa học thành công.",
+            "success"
+        )
+
+    except SQLAlchemyError:
+        db.session.rollback()
+        flash(
+            "Không thể ẩn khóa học do lỗi cơ sở dữ liệu.",
+            "danger"
+        )
+
+    return redirect(url_for("lecturer.courses"))
+
+
+    # ========================================
+    # XÓA KHÓA HỌC (BẢN NHÁP)
+    # ========================================
+@lecturer_bp.post("/courses/<int:course_id>/delete")
+@lecturer_required
+def delete_course(course_id):
+    # Bước 1: Kiểm tra quyền truy cập
+    course = get_course(course_id, require_edit=True)
+
+    # Bước 2: Không cho xóa trực tiếp khóa học đang xuất bản
+    if course["status"] == "PUBLISHED":
+        flash(
+            "Vui lòng ẩn khóa học trước khi xóa.",
+            "warning"
+        )
+        return redirect(url_for("lecturer.courses"))
+
+    # Bước 3: Chỉ cho phép xóa bản nháp hoặc khóa học đã ẩn
+    if course["status"] not in {"DRAFT", "UNPUBLISHED"}:
+        flash(
+            "Trạng thái khóa học không hợp lệ để xóa.",
+            "warning"
+        )
+        return redirect(url_for("lecturer.courses"))
+
+    try:
+        # Bước 4: Kiểm tra dữ liệu liên quan
+        dependencies = db.session.execute(
+            text("""
+                SELECT
+                    (
+                        SELECT COUNT(*)
+                        FROM lessons
+                        WHERE course_id = :course_id
+                    ) AS lessons_count,
+
+                    (
+                        SELECT COUNT(*)
+                        FROM enrollments
+                        WHERE course_id = :course_id
+                    ) AS enrollments_count,
+
+                    (
+                        SELECT COUNT(*)
+                        FROM assessments
+                        WHERE course_id = :course_id
+                    ) AS assessments_count,
+
+                    (
+                        SELECT COUNT(*)
+                        FROM course_lecturers
+                        WHERE course_id = :course_id
+                    ) AS lecturers_count
+            """),
+            {"course_id": course_id}
+        ).mappings().first()
+
+        # Bước 5: Tổng hợp những dữ liệu đang liên kết
+        related_data = []
+
+        if dependencies["lessons_count"] > 0:
+            related_data.append(
+                f'{dependencies["lessons_count"]} bài học'
+            )
+
+        if dependencies["enrollments_count"] > 0:
+            related_data.append(
+                f'{dependencies["enrollments_count"]} yêu cầu đăng ký'
+            )
+
+        if dependencies["assessments_count"] > 0:
+            related_data.append(
+                f'{dependencies["assessments_count"]} bài kiểm tra'
+            )
+
+        if dependencies["lecturers_count"] > 0:
+            related_data.append(
+                f'{dependencies["lecturers_count"]} giảng viên được phân công'
+            )
+
+        # Bước 6: Nếu có dữ liệu liên quan thì từ chối xóa
+        if related_data:
+            details = ", ".join(related_data)
+
+            flash(
+                f"Không thể xóa khóa học vì còn dữ liệu liên quan: {details}.",
+                "warning"
+            )
+
+            return redirect(url_for("lecturer.courses"))
+
+        # Bước 7: Chỉ xóa khi không có dữ liệu phụ thuộc
+        db.session.execute(
+            text("""
+                DELETE FROM courses
+                WHERE course_id = :course_id
+            """),
+            {"course_id": course_id}
+        )
+
+        db.session.commit()
+
+        flash(
+            "Đã xóa khóa học thành công.",
+            "success"
+        )
+
+    except SQLAlchemyError:
+        db.session.rollback()
+
+        flash(
+            "Không thể xóa khóa học. Dữ liệu có thể đang được sử dụng.",
+            "danger"
+        )
+
+    return redirect(url_for("lecturer.courses"))
+
+
+
 @lecturer_bp.get("/courses/<int:course_id>/lessons")
 @lecturer_required
 def course_lessons(course_id):
+
+    # ========================================
+    # 1. KIỂM TRA KHÓA HỌC
+    # ========================================
+
     course = get_course(course_id)
-    lessons = db.session.execute(
+    # Kiểm tra quyền chỉnh sửa khóa học
+    can_edit_course = (
+        course["created_by_user_id"] == current_user.user_id
+    )
+
+    if not can_edit_course:
+        permission = db.session.execute(
+            text("""
+                SELECT permission
+                FROM course_lecturers
+                WHERE course_id = :course_id
+                AND lecturer_user_id = :user_id
+                LIMIT 1
+            """),
+            {
+                "course_id": course_id,
+                "user_id": current_user.user_id
+            }
+        ).scalar()
+
+        can_edit_course = permission == "EDIT"
+
+    params = {
+        "course_id": course_id
+    }
+
+    # ========================================
+    # 2. LẤY DANH SÁCH BÀI HỌC
+    # ========================================
+
+    lessons_rows = db.session.execute(
         text(
             """
-            SELECT le.lesson_id, le.lesson_name, le.description,
-                   le.lesson_order, le.status, le.theory_content,
-                   (SELECT COUNT(*)
+            SELECT
+                le.lesson_id,
+                le.course_id,
+                le.lesson_name,
+                le.description,
+                le.theory_content,
+                le.lesson_order,
+                le.status,
+
+                (
+                    SELECT COUNT(DISTINCT lvs.lesson_vocabulary_set_id)
                     FROM lesson_vocabulary_sets lvs
-                    WHERE lvs.lesson_id = le.lesson_id) AS flashcard_sets_count
+                    WHERE lvs.lesson_id = le.lesson_id
+                ) AS flashcard_sets_count,
+
+                (
+                    SELECT COUNT(DISTINCT vi.item_id)
+                    FROM lesson_vocabulary_sets lvs
+                    JOIN vocabulary_sets vs
+                        ON vs.set_id = lvs.set_id
+                    JOIN vocabulary_items vi
+                        ON vi.set_id = vs.set_id
+                    WHERE lvs.lesson_id = le.lesson_id
+                      AND vs.status = 'ACTIVE'
+                      AND vi.status = 'ACTIVE'
+                ) AS vocabulary_count
+
             FROM lessons le
+
             WHERE le.course_id = :course_id
-            ORDER BY le.lesson_order
+
+            ORDER BY le.lesson_order ASC, le.lesson_id ASC
             """
         ),
-        {"course_id": course_id},
+        params
     ).mappings().all()
 
-    sets = db.session.execute(
+    lessons = [
+        dict(row)
+        for row in lessons_rows
+    ]
+
+    # ========================================
+    # 3. LẤY CÁC BỘ FLASHCARD ĐÃ GẮN
+    # ========================================
+
+    attached_rows = db.session.execute(
         text(
             """
-            SELECT set_id, set_name, set_type
+            SELECT
+                lvs.lesson_id,
+                lvs.set_id,
+                lvs.display_order,
+
+                vs.set_name,
+                vs.set_type,
+                vs.status AS set_status,
+
+                (
+                    SELECT COUNT(*)
+                    FROM vocabulary_items vi
+                    WHERE vi.set_id = vs.set_id
+                      AND vi.status = 'ACTIVE'
+                ) AS vocabulary_count
+
+            FROM lesson_vocabulary_sets lvs
+
+            JOIN lessons le
+                ON le.lesson_id = lvs.lesson_id
+
+            JOIN vocabulary_sets vs
+                ON vs.set_id = lvs.set_id
+
+            WHERE le.course_id = :course_id
+
+            ORDER BY
+                lvs.lesson_id,
+                lvs.display_order,
+                vs.set_name
+            """
+        ),
+        params
+    ).mappings().all()
+
+    # Gom các bộ Flashcard theo từng bài học
+    attached_sets_by_lesson = {}
+
+    for row in attached_rows:
+
+        lesson_id = row["lesson_id"]
+
+        if lesson_id not in attached_sets_by_lesson:
+            attached_sets_by_lesson[lesson_id] = []
+
+        attached_sets_by_lesson[lesson_id].append(
+            dict(row)
+        )
+
+    # Gắn danh sách Flashcard vào từng bài học
+    for lesson in lessons:
+
+        lesson["vocabulary_sets"] = (
+            attached_sets_by_lesson.get(
+                lesson["lesson_id"],
+                []
+            )
+        )
+
+    # ========================================
+    # 4. THỐNG KÊ TỔNG QUAN KHÓA HỌC
+    # ========================================
+
+    summary_row = db.session.execute(
+        text(
+            """
+            SELECT
+
+                COUNT(DISTINCT le.lesson_id)
+                    AS total_lessons,
+
+                COUNT(DISTINCT lvs.lesson_vocabulary_set_id)
+                    AS total_flashcard_sets,
+
+                COUNT(
+                    DISTINCT CASE
+                        WHEN vs.status = 'ACTIVE'
+                         AND vi.status = 'ACTIVE'
+                        THEN vi.item_id
+                    END
+                ) AS total_vocabulary
+
+            FROM lessons le
+
+            LEFT JOIN lesson_vocabulary_sets lvs
+                ON lvs.lesson_id = le.lesson_id
+
+            LEFT JOIN vocabulary_sets vs
+                ON vs.set_id = lvs.set_id
+
+            LEFT JOIN vocabulary_items vi
+                ON vi.set_id = vs.set_id
+
+            WHERE le.course_id = :course_id
+            """
+        ),
+        params
+    ).mappings().first()
+
+    summary = dict(summary_row or {})
+
+    # ========================================
+    # 5. LẤY CÁC BỘ FLASHCARD CÓ THỂ GẮN
+    # ========================================
+
+    available_sets_rows = db.session.execute(
+        text(
+            """
+            SELECT
+                set_id,
+                set_name,
+                set_type
+
             FROM vocabulary_sets
+
             WHERE language_id = :language_id
               AND status = 'ACTIVE'
               AND (
@@ -584,18 +943,34 @@ def course_lessons(course_id):
                     OR owner_user_id = :user_id
                     OR created_by_user_id = :user_id
               )
+
             ORDER BY set_name
             """
         ),
-        {"language_id": course["language_id"], "user_id": current_user.user_id},
+        {
+            "language_id": course["language_id"],
+            "user_id": current_user.user_id
+        }
     ).mappings().all()
 
+    vocabulary_sets = [
+        dict(row)
+        for row in available_sets_rows
+    ]
+
+    # ========================================
+    # 6. TRẢ DỮ LIỆU VỀ GIAO DIỆN
+    # ========================================
+
     return render_template(
-        "lecturer/lessons.html",
-        course=course,
-        lessons=[dict(row) for row in lessons],
-        vocabulary_sets=[dict(row) for row in sets],
-    )
+    "lecturer/lessons.html",
+    course=course,
+    lessons=lessons,
+    summary=summary,
+    vocabulary_sets=vocabulary_sets,
+    can_edit_course=can_edit_course
+)
+
 
 
 @lecturer_bp.route("/courses/<int:course_id>/lessons/create", methods=["POST"])
@@ -718,6 +1093,341 @@ def attach_vocabulary_set(lesson_id):
         flash("Bộ Flashcard này có thể đã được thêm vào bài học.", "warning")
 
     return redirect(url_for("lecturer.course_lessons", course_id=row["course_id"]))
+
+
+
+@lecturer_bp.post(
+    "/lessons/<int:lesson_id>/flashcard-sets/<int:set_id>/remove"
+)
+@lecturer_required
+def detach_vocabulary_set(lesson_id, set_id):
+
+    # 1. Kiểm tra bài học tồn tại và lấy khóa học sở hữu
+    lesson = db.session.execute(
+        text("""
+            SELECT lesson_id, course_id
+            FROM lessons
+            WHERE lesson_id = :lesson_id
+            LIMIT 1
+        """),
+        {"lesson_id": lesson_id}
+    ).mappings().first()
+
+    if not lesson:
+        abort(404)
+
+    # 2. Kiểm tra quyền chỉnh sửa khóa học
+    get_course(lesson["course_id"], require_edit=True)
+
+    try:
+        # 3. Chỉ xóa liên kết giữa bài học và bộ Flashcard
+        result = db.session.execute(
+            text("""
+                DELETE FROM lesson_vocabulary_sets
+                WHERE lesson_id = :lesson_id
+                  AND set_id = :set_id
+            """),
+            {
+                "lesson_id": lesson_id,
+                "set_id": set_id
+            }
+        )
+
+        if result.rowcount != 1:
+            db.session.rollback()
+            flash(
+                "Bộ Flashcard không còn được gắn vào bài học.",
+                "warning"
+            )
+        else:
+            db.session.commit()
+            flash(
+                "Đã gỡ bộ Flashcard khỏi bài học.",
+                "success"
+            )
+
+    except SQLAlchemyError:
+        db.session.rollback()
+
+        flash(
+            "Không thể gỡ bộ Flashcard. Vui lòng thử lại.",
+            "danger"
+        )
+
+    return redirect(
+        url_for(
+            "lecturer.course_lessons",
+            course_id=lesson["course_id"]
+        )
+    )
+
+
+
+@lecturer_bp.post(
+    "/courses/<int:course_id>/lessons/<int:lesson_id>/flashcard-sets/create"
+)
+@lecturer_required
+def create_and_attach_vocabulary_set(course_id, lesson_id):
+
+    # ========================================
+    # 1. KIỂM TRA QUYỀN KHÓA HỌC
+    # ========================================
+
+    course = get_course(course_id, require_edit=True)
+
+    # Kiểm tra bài học có thuộc khóa học này không
+    lesson_exists = db.session.execute(
+        text("""
+            SELECT COUNT(*)
+            FROM lessons
+            WHERE lesson_id = :lesson_id
+              AND course_id = :course_id
+        """),
+        {
+            "lesson_id": lesson_id,
+            "course_id": course_id
+        }
+    ).scalar()
+
+    if not lesson_exists:
+        abort(404)
+
+    # ========================================
+    # 2. LẤY THÔNG TIN BỘ FLASHCARD
+    # ========================================
+
+    set_name = request.form.get("set_name", "").strip()
+
+    description = (
+        request.form.get("description", "").strip() or None
+    )
+
+    vocabulary_text = request.form.get(
+        "vocabulary_entries", ""
+    )
+
+    if not set_name:
+        flash("Vui lòng nhập tên bộ Flashcard.", "danger")
+        return redirect(url_for(
+            "lecturer.course_lessons",
+            course_id=course_id
+        ))
+
+    if len(set_name) > 200:
+        flash("Tên bộ Flashcard không được vượt quá 200 ký tự.", "danger")
+        return redirect(url_for(
+            "lecturer.course_lessons",
+            course_id=course_id
+        ))
+
+    # ========================================
+    # 3. PHÂN TÍCH DANH SÁCH TỪ VỰNG
+    # ========================================
+
+    vocabulary_items = []
+
+    for line_number, raw_line in enumerate(
+        vocabulary_text.splitlines(), start=1
+    ):
+
+        if not raw_line.strip():
+            continue
+
+        # Mỗi dòng gồm:
+        # Từ vựng [TAB] Nghĩa [TAB] Ví dụ (không bắt buộc)
+
+        columns = [
+            value.strip()
+            for value in raw_line.split("\t")
+        ]
+
+        if len(columns) not in (2, 3):
+            flash(
+                f"Dòng {line_number} không hợp lệ. "
+                "Mỗi dòng cần có 2 hoặc 3 cột: "
+                "Từ vựng, Nghĩa, Ví dụ.",
+                "danger"
+            )
+            return redirect(url_for(
+                "lecturer.course_lessons",
+                course_id=course_id
+            ))
+
+        term = columns[0]
+        meaning = columns[1]
+        example = columns[2] if len(columns) == 3 else None
+
+        if not term or not meaning:
+            flash(
+                f"Dòng {line_number} phải có cả từ vựng và nghĩa.",
+                "danger"
+            )
+            return redirect(url_for(
+                "lecturer.course_lessons",
+                course_id=course_id
+            ))
+
+        if len(term) > 255:
+            flash(
+                f"Từ vựng ở dòng {line_number} vượt quá 255 ký tự.",
+                "danger"
+            )
+            return redirect(url_for(
+                "lecturer.course_lessons",
+                course_id=course_id
+            ))
+
+        vocabulary_items.append({
+            "term": term,
+            "meaning": meaning,
+            "example": example
+        })
+
+    if not vocabulary_items:
+        flash("Vui lòng nhập ít nhất một từ vựng.", "danger")
+        return redirect(url_for(
+            "lecturer.course_lessons",
+            course_id=course_id
+        ))
+
+    # ========================================
+    # 4. TẠO BỘ FLASHCARD VÀ THÊM TỪ VỰNG
+    # ========================================
+
+    try:
+
+        # Tạo bộ Flashcard thuộc quyền sở hữu giảng viên
+        result = db.session.execute(
+            text("""
+                INSERT INTO vocabulary_sets (
+                    set_name,
+                    description,
+                    set_type,
+                    language_id,
+                    topic_id,
+                    owner_user_id,
+                    created_by_user_id,
+                    status
+                )
+                VALUES (
+                    :set_name,
+                    :description,
+                    'LECTURER',
+                    :language_id,
+                    :topic_id,
+                    :user_id,
+                    :user_id,
+                    'ACTIVE'
+                )
+            """),
+            {
+                "set_name": set_name,
+                "description": description,
+                "language_id": course["language_id"],
+                "topic_id": course["topic_id"],
+                "user_id": current_user.user_id
+            }
+        )
+
+        new_set_id = result.lastrowid
+
+        # Thêm từng từ vựng vào bộ vừa tạo
+        for index, item in enumerate(vocabulary_items, start=1):
+
+            db.session.execute(
+                text("""
+                    INSERT INTO vocabulary_items (
+                        set_id,
+                        term,
+                        meaning,
+                        example,
+                        display_order,
+                        status
+                    )
+                    VALUES (
+                        :set_id,
+                        :term,
+                        :meaning,
+                        :example,
+                        :display_order,
+                        'ACTIVE'
+                    )
+                """),
+                {
+                    "set_id": new_set_id,
+                    "term": item["term"],
+                    "meaning": item["meaning"],
+                    "example": item["example"],
+                    "display_order": index
+                }
+            )
+
+        # ========================================
+        # 5. GẮN BỘ FLASHCARD VÀO BÀI HỌC
+        # ========================================
+
+        next_order = db.session.execute(
+            text("""
+                SELECT COALESCE(MAX(display_order), 0) + 1
+                FROM lesson_vocabulary_sets
+                WHERE lesson_id = :lesson_id
+            """),
+            {"lesson_id": lesson_id}
+        ).scalar()
+
+        db.session.execute(
+            text("""
+                INSERT INTO lesson_vocabulary_sets (
+                    lesson_id,
+                    set_id,
+                    display_order
+                )
+                VALUES (
+                    :lesson_id,
+                    :set_id,
+                    :display_order
+                )
+            """),
+            {
+                "lesson_id": lesson_id,
+                "set_id": new_set_id,
+                "display_order": next_order
+            }
+        )
+
+        # ========================================
+        # 6. LƯU GIAO DỊCH
+        # ========================================
+
+        db.session.commit()
+
+        flash(
+            f"Đã tạo bộ Flashcard và thêm "
+            f"{len(vocabulary_items)} từ vựng vào bài học.",
+            "success"
+        )
+
+    except SQLAlchemyError:
+
+        # Ghi lại lỗi SQL chi tiết vào Terminal
+        current_app.logger.exception(
+            "Loi khi tao va gan bo Flashcard"
+        )
+
+        # Hoàn tác toàn bộ giao dịch
+        db.session.rollback()
+
+        flash(
+            "Không thể tạo bộ Flashcard. "
+            "Vui lòng kiểm tra lỗi trong Terminal.",
+            "danger"
+        )
+
+    return redirect(url_for(
+        "lecturer.course_lessons",
+        course_id=course_id
+    ))
+
 
 
 @lecturer_bp.get("/enrollments")
