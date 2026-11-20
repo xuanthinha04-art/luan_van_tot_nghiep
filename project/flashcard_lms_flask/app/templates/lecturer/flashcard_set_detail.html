@@ -1,0 +1,281 @@
+
+{% extends "base.html" %}
+
+{% block title %}
+    {{ flashcard_set.set_name }} | Quản lý Flashcard
+{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/lecturer-lessons.css') }}"
+    >
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/lecturer-flashcards.css') }}"
+    >
+{% endblock %}
+
+{% block breadcrumb %}
+    <a href="{{ url_for('lecturer.courses') }}">Khóa học</a>
+    <span>›</span>
+    Quản lý Flashcard
+    <span>›</span>
+    {{ flashcard_set.set_name }}
+{% endblock %}
+
+{% block content %}
+
+<div class="flashcard-detail-page">
+
+    <!-- PAGE HEADER -->
+
+    <div class="flashcard-detail-heading">
+
+        <div>
+            <div class="lesson-eyebrow">FLASHCARD MANAGEMENT</div>
+
+            <h1>{{ flashcard_set.set_name }}</h1>
+
+            <p>
+                Xem và quản lý nội dung từ vựng trong bộ Flashcard.
+            </p>
+        </div>
+
+        <a
+            href="{{ url_for('lecturer.courses') }}"
+            class="lesson-secondary-button"
+        >
+            ← Quay lại khóa học
+        </a>
+
+    </div>
+
+
+    <!-- FLASHCARD INFORMATION -->
+
+    <section class="flashcard-detail-info">
+
+        <div class="flashcard-detail-info-main">
+
+            <h2>{{ flashcard_set.set_name }}</h2>
+
+            <div class="lesson-course-tags">
+
+                <span class="lesson-tag">
+                    {{ flashcard_set.language_name }}
+                </span>
+
+                {% if flashcard_set.topic_name %}
+                <span class="lesson-tag lesson-tag-topic">
+                    {{ flashcard_set.topic_name }}
+                </span>
+                {% endif %}
+
+                {% if flashcard_set.set_type == 'LECTURER' %}
+                <span class="lesson-tag lesson-tag-topic">
+                    Bộ giảng viên tạo
+                </span>
+                {% elif flashcard_set.set_type == 'PERSONAL' %}
+                <span class="lesson-tag">
+                    Bộ cá nhân
+                </span>
+                {% elif flashcard_set.set_type == 'COMMON' %}
+                <span class="lesson-tag">
+                    Bộ từ vựng chung
+                </span>
+                {% endif %}
+
+                {% if flashcard_set.status == 'ACTIVE' %}
+                <span class="lesson-tag lesson-tag-published">
+                    ● Đang hoạt động
+                </span>
+                {% else %}
+                <span class="lesson-tag">
+                    ● Ngừng hoạt động
+                </span>
+                {% endif %}
+
+            </div>
+
+            <p class="lesson-course-description">
+                {{ flashcard_set.description or 'Chưa có mô tả bộ Flashcard.' }}
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- STATISTICS -->
+
+    <section class="lesson-summary-grid">
+
+        <article class="lesson-summary-card">
+
+            <div class="lesson-summary-icon">
+                ▤
+            </div>
+
+            <div>
+                <span>TỔNG SỐ TỪ VỰNG</span>
+
+                <strong>{{ flashcard_set.total_items }}</strong>
+
+                <small>từ</small>
+            </div>
+
+        </article>
+
+
+        <article class="lesson-summary-card">
+
+            <div class="lesson-summary-icon teal">
+                A
+            </div>
+
+            <div>
+                <span>TỪ ĐANG HOẠT ĐỘNG</span>
+
+                <strong>{{ flashcard_set.active_items }}</strong>
+
+                <small>từ</small>
+            </div>
+
+        </article>
+
+
+        <article class="lesson-summary-card">
+
+            <div class="lesson-summary-icon purple">
+                ◈
+            </div>
+
+            <div>
+                <span>BÀI HỌC ĐANG SỬ DỤNG</span>
+
+                <strong>{{ flashcard_set.linked_lessons_count }}</strong>
+
+                <small>bài học</small>
+            </div>
+
+        </article>
+
+    </section>
+
+
+    <!-- VOCABULARY LIST -->
+
+    <section class="flashcard-items-section">
+
+        <div class="flashcard-items-heading">
+
+            <div>
+                <h2>Danh sách từ vựng</h2>
+
+                <p>
+                    Nội dung các từ được lưu trong bộ Flashcard.
+                </p>
+            </div>
+
+            <span class="count-pill">
+                {{ items|length }} từ
+            </span>
+
+        </div>
+
+
+        {% if items %}
+
+        <div class="lesson-table-wrapper">
+
+            <table class="lesson-table flashcard-items-table">
+
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>TỪ VỰNG</th>
+                        <th>NGHĨA</th>
+                        <th>VÍ DỤ</th>
+                        <th>TRẠNG THÁI</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in items %}
+
+                    <tr>
+
+                        <td>
+                            <span class="lesson-number">
+                                {{ "%02d"|format(loop.index) }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <strong class="flashcard-term">
+                                {{ item.term }}
+                            </strong>
+                        </td>
+
+                        <td>
+                            {{ item.meaning }}
+                        </td>
+
+                        <td>
+                            {% if item.example %}
+                                <span class="flashcard-example">
+                                    {{ item.example }}
+                                </span>
+                            {% else %}
+                                <span class="lesson-no-flashcard">
+                                    Chưa có ví dụ
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if item.status == 'ACTIVE' %}
+                                <span class="lesson-status-badge completed">
+                                    Đang hoạt động
+                                </span>
+                            {% else %}
+                                <span class="lesson-status-badge draft">
+                                    Ngừng hoạt động
+                                </span>
+                            {% endif %}
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="lesson-empty-state">
+
+            <div class="lesson-empty-icon">A</div>
+
+            <h2>Bộ Flashcard chưa có từ vựng</h2>
+
+            <p>
+                Hãy thêm từ vựng để bắt đầu sử dụng bộ Flashcard.
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </section>
+
+</div>
+
+{% endblock %}

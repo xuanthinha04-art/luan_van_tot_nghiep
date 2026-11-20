@@ -348,9 +348,13 @@
 
                                     {% for vocabulary_set in lesson.vocabulary_sets %}
 
-                                    <span
+                                    <a
+                                        href="{{ url_for(
+                                            'lecturer.view_flashcard_set',
+                                            set_id=vocabulary_set.set_id
+                                        ) }}"
                                         class="lesson-flashcard-chip"
-                                        title="{{ vocabulary_set.set_name }}"
+                                        title="Xem bộ Flashcard {{ vocabulary_set.set_name }}"
                                     >
                                         ◈
                                         {{ vocabulary_set.set_name }}
@@ -358,8 +362,7 @@
                                         {% if vocabulary_set.set_status != 'ACTIVE' %}
                                             <small>(Ngừng hoạt động)</small>
                                         {% endif %}
-
-                                    </span>
+                                    </a>
 
                                     {% endfor %}
 

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Duyệt đăng ký | Flashcard LMS{% endblock %}
+{% block breadcrumb %}Duyệt đăng ký{% endblock %}
+{% block content %}
+<div class="page-heading"><div><div class="eyebrow">ENROLLMENT REQUESTS</div><h1>Yêu cầu tham gia khóa học</h1><p class="muted">Xem và xử lý yêu cầu đăng ký của học viên.</p></div></div>
+<section class="panel">
+{% if enrollments %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>HỌC VIÊN</th><th>KHÓA HỌC</th><th>NGÀY GỬI</th><th>TRẠNG THÁI</th><th>THAO TÁC</th></tr></thead>
+    <tbody>{% for item in enrollments %}
+      <tr>
+        <td><strong>{{ item.learner_name }}</strong><small class="table-secondary">{{ item.email }}</small></td>
+        <td>{{ item.course_name }}</td>
+        <td>{{ item.requested_at.strftime('%d/%m/%Y %H:%M') if item.requested_at else '—' }}</td>
+        <td><span class="status status-{{ item.status|lower }}">{{ {'PENDING':'Chờ duyệt','APPROVED':'Đã duyệt','REJECTED':'Từ chối','CANCELLED':'Đã hủy'}.get(item.status, item.status) }}</span></td>
+        <td>
+        {% if item.status == 'PENDING' %}
+          <div class="review-actions">
+            <form method="post" action="{{ url_for('lecturer.review_enrollment', enrollment_id=item.enrollment_id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="APPROVED"><button class="btn btn-success btn-xs">Duyệt</button></form>
+            <form method="post" action="{{ url_for('lecturer.review_enrollment', enrollment_id=item.enrollment_id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="REJECTED"><input type="hidden" name="rejection_reason" value="Không đáp ứng điều kiện tham gia"><button class="btn btn-danger-outline btn-xs">Từ chối</button></form>
+          </div>
+        {% else %}<span class="muted small">Đã xử lý</span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}</tbody>
+  </table></div>
+{% else %}
+  <div class="empty-state"><div class="empty-icon">✓</div><strong>Chưa có yêu cầu đăng ký</strong><p>Yêu cầu tham gia khóa học của học viên sẽ hiển thị ở đây.</p></div>
+{% endif %}
+</section>
+{% endblock %}

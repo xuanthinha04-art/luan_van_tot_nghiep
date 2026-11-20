@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Tổng quan giảng viên | Flashcard LMS{% endblock %}
+{% block breadcrumb %}Tổng quan{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow">DASHBOARD</div>
+    <h1>Xin chào, {{ current_user.full_name.split(' ')[-1] }} 👋</h1>
+    <p class="muted">Theo dõi hoạt động giảng dạy và quản lý các khóa học của bạn.</p>
+  </div>
+  <a href="{{ url_for('lecturer.create_course') }}" class="btn btn-primary">＋ Tạo khóa học</a>
+</div>
+
+<div class="welcome-banner">
+  <div>
+    <span class="welcome-kicker">KHÔNG GIAN GIẢNG DẠY CỦA BẠN</span>
+    <h2>Kiến tạo trải nghiệm học từ vựng hiệu quả</h2>
+    <p>Quản lý nội dung, tổ chức bài học và đồng hành cùng học viên trên một nền tảng.</p>
+    <a href="{{ url_for('lecturer.courses') }}" class="welcome-link">Xem khóa học của tôi <span>→</span></a>
+  </div>
+  <div class="welcome-art" aria-hidden="true"><span class="art-card art-card-back">Aa</span><span class="art-card art-card-front">Ab</span><span class="art-spark">✦</span></div>
+</div>
+
+<div class="section-heading">
+  <div><h2>Tổng quan hoạt động</h2><p class="muted">Các chỉ số được tổng hợp từ Database.</p></div>
+  <span class="updated-label">Cập nhật theo dữ liệu hiện tại</span>
+</div>
+
+<div class="stats-grid">
+  <article class="stat-card">
+    <div class="stat-top"><span class="stat-icon green">▤</span><span class="stat-caption">NỘI DUNG</span></div>
+    <strong class="stat-number">{{ stats.course_count or 0 }}</strong>
+    <span class="stat-label">Khóa học</span>
+  </article>
+  <article class="stat-card">
+    <div class="stat-top"><span class="stat-icon blue">▧</span><span class="stat-caption">BÀI GIẢNG</span></div>
+    <strong class="stat-number">{{ stats.lesson_count or 0 }}</strong>
+    <span class="stat-label">Bài học</span>
+  </article>
+  <article class="stat-card">
+    <div class="stat-top"><span class="stat-icon violet">♙</span><span class="stat-caption">NGƯỜI HỌC</span></div>
+    <strong class="stat-number">{{ stats.learner_count or 0 }}</strong>
+    <span class="stat-label">Học viên đã tham gia</span>
+  </article>
+  <article class="stat-card">
+    <div class="stat-top"><span class="stat-icon orange">◷</span><span class="stat-caption">CẦN XỬ LÝ</span></div>
+    <strong class="stat-number">{{ stats.pending_count or 0 }}</strong>
+    <span class="stat-label">Yêu cầu chờ duyệt</span>
+  </article>
+</div>
+
+<div class="dashboard-grid">
+  <section class="panel">
+    <div class="panel-heading">
+      <div><h2>Khóa học gần đây</h2><p class="muted">Các khóa học bạn tạo hoặc được phân công.</p></div>
+      <a class="text-link" href="{{ url_for('lecturer.courses') }}">Xem tất cả →</a>
+    </div>
+    {% if courses %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>TÊN KHÓA HỌC</th><th>NGÔN NGỮ</th><th>BÀI HỌC</th><th>HỌC VIÊN</th><th>TRẠNG THÁI</th></tr></thead>
+        <tbody>
+        {% for course in courses %}
+          <tr>
+            <td><a class="table-primary" href="{{ url_for('lecturer.course_lessons', course_id=course.course_id) }}">{{ course.course_name }}</a><small class="table-secondary">{{ course.topic_name or 'Chưa phân chủ đề' }}</small></td>
+            <td>{{ course.language_name }}</td>
+            <td>{{ course.lessons_count }}</td>
+            <td>{{ course.learners_count }}</td>
+            <td><span class="status status-{{ course.status|lower }}">{{ {'DRAFT':'Bản nháp','PUBLISHED':'Đã xuất bản','UNPUBLISHED':'Đã ẩn'}.get(course.status, course.status) }}</span></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="empty-state"><div class="empty-icon">▤</div><strong>Bạn chưa có khóa học nào</strong><p>Tạo khóa học đầu tiên để bắt đầu xây dựng nội dung giảng dạy.</p><a class="btn btn-primary btn-small" href="{{ url_for('lecturer.create_course') }}">＋ Tạo khóa học</a></div>
+    {% endif %}
+  </section>
+
+  <section class="panel pending-panel">
+    <div class="panel-heading">
+      <div><h2>Yêu cầu tham gia</h2><p class="muted">Các yêu cầu mới nhất cần xử lý.</p></div>
+      <a class="text-link" href="{{ url_for('lecturer.enrollments') }}">Tất cả →</a>
+    </div>
+    {% if pending %}
+      <div class="request-list">
+      {% for item in pending %}
+        <div class="request-item">
+          <div class="avatar avatar-request">{{ item.learner_name[:1]|upper }}</div>
+          <div class="request-info"><strong>{{ item.learner_name }}</strong><span>{{ item.course_name }}</span><small>{{ item.email }}</small></div>
+          <span class="pending-dot" title="Chờ duyệt"></span>
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-mini"><span>✓</span><strong>Không có yêu cầu chờ duyệt</strong><p>Các yêu cầu đăng ký mới sẽ xuất hiện tại đây.</p></div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
